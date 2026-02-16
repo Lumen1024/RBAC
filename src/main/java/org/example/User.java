@@ -2,7 +2,11 @@ package org.example;
 
 import java.util.regex.Pattern;
 
-public record User(String username, String fullName, String email) {
+public record User(
+        String username,
+        String fullName,
+        String email
+) {
 
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{3,20}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@]+@[^@]+\\.[^@]+$");

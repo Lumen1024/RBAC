@@ -3,7 +3,11 @@ package org.example;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public record AssignmentMetadata(String assignedBy, String assignedAt, String reason) {
+public record AssignmentMetadata(
+        String assignedBy,
+        String assignedAt,
+        String reason
+) {
 
     public AssignmentMetadata {
         if (assignedBy == null || assignedBy.isBlank() || assignedAt == null || assignedAt.isBlank()) {

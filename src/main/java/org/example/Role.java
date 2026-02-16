@@ -64,14 +64,26 @@ public class Role {
     // endregion
 
     public String format() {
-        String perms = permissions.stream().map(p -> "  - " + p.format()).collect(Collectors.joining("\n"));
-        return "Role: %s [ID: %s]\nDescription: %s\nPermissions (%d):\n%s".formatted(name, id, description, permissions.size(), perms);
+        String perms = permissions.stream()
+                .map(p -> "  - " + p.format())
+                .collect(Collectors.joining("\n"));
+
+        return "Role: %s [ID: %s]\nDescription: %s\nPermissions (%d):\n%s".formatted(
+                name,
+                id,
+                description,
+                permissions.size(),
+                perms
+        );
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Role role)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Role role))
+            return false;
+
         return id.equals(role.id);
     }
 
@@ -82,6 +94,10 @@ public class Role {
 
     @Override
     public String toString() {
-        return "Role{id='%s', name='%s', permissions=%d}".formatted(id, name, permissions.size());
+        return "Role{id='%s', name='%s', permissions=%d}".formatted(
+                id,
+                name,
+                permissions.size()
+        );
     }
 }

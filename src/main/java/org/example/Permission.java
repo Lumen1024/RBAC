@@ -1,6 +1,10 @@
 package org.example;
 
-public record Permission(String name, String resource, String description) {
+public record Permission(
+        String name,
+        String resource,
+        String description
+) {
 
     public Permission {
         if (name == null || resource == null || description == null || name.isBlank() || resource.isBlank() || description.isBlank()) {
