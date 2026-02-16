@@ -10,7 +10,7 @@ public record User(String username, String fullName, String email) {
 
     public static User create(String username, String fullName, String email) {
         if (username == null || fullName == null || email == null || username.isBlank() || fullName.isBlank() || email.isBlank()) {
-            throw new IllegalArgumentException("Все поля содержать значения");
+            throw new IllegalArgumentException("Все поля должны содержать значения");
         }
 
         if (!USERNAME_PATTERN.matcher(username).matches()) {
