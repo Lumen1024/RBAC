@@ -6,5 +6,13 @@ import org.example.User;
 public interface UserFilter {
 
     boolean test(User user);
+
+    default UserFilter and(UserFilter other) {
+        return user -> test(user) && other.test(user);
+    }
+
+    default UserFilter or(UserFilter other) {
+        return user -> test(user) || other.test(user);
+    }
 }
 
