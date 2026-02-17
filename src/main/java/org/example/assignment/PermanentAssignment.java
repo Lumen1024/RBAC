@@ -1,4 +1,7 @@
-package org.example;
+package org.example.assignment;
+
+import org.example.Role;
+import org.example.User;
 
 public class PermanentAssignment extends AbstractRoleAssignment {
     private boolean revoked = false;
