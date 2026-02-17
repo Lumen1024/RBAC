@@ -1,6 +1,6 @@
 package org.example.filter;
 
-import org.example.RoleAssignment;
+import org.example.assignment.RoleAssignment;
 
 @FunctionalInterface
 public interface AssignmentFilter {
