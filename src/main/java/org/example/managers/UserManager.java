@@ -12,9 +12,7 @@ public class UserManager implements Repository<User> {
 
     @Override
     public void add(User item) {
-        if (item == null) {
-            throw new IllegalArgumentException("Пользователь не может быть null");
-        }
+        Objects.requireNonNull(item, "Пользователь не может быть null");
         if (users.containsKey(item.username())) {
             throw new IllegalStateException(
                     "Пользователь с username '%s' уже существует".formatted(item.username()));
@@ -61,8 +59,7 @@ public class UserManager implements Repository<User> {
     }
 
     public List<User> findByFilter(UserFilter filter) {
-        if (filter == null)
-            throw new IllegalArgumentException("Фильтр не может быть null");
+        Objects.requireNonNull(filter, "Фильтр не может быть null");
 
         return users.values().stream()
                 .filter(filter::test)
@@ -70,10 +67,8 @@ public class UserManager implements Repository<User> {
     }
 
     public List<User> findAll(UserFilter filter, Comparator<User> sorter) {
-        if (filter == null)
-            throw new IllegalArgumentException("Фильтр не может быть null");
-        if (sorter == null)
-            throw new IllegalArgumentException("Сортировщик не может быть null");
+        Objects.requireNonNull(filter, "Фильтр не может быть null");
+        Objects.requireNonNull(sorter, "Сортировщик не может быть null");
 
         return users.values().stream()
                 .filter(filter::test)
