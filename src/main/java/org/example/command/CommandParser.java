@@ -24,7 +24,7 @@ public class CommandParser {
 
                 var flag_values = new ArrayList<String>();
 
-                if (i + flag_values_count >= args.size())
+                if (i + flag_values_count > args.size())
                     return Optional.empty();
 
                 for (int j = i + 1; j <= i + flag_values_count; j++) {
@@ -49,18 +49,28 @@ public class CommandParser {
         if (input.isEmpty())
             return;
 
-        var line = input.trim().split("//s+");
+        var line = input.trim().split("\\s+");
 
         var command = commands.stream()
                 .filter(c -> c.getName().equals(line[0]))
                 .findFirst()
                 .orElse(null);
 
-        if (command != null) {
-            command.execute(scanner, rbacSystem, List.of(line).subList(1, line.length));
-        } else {
+        if (command == null) {
             System.out.println("Нет такой команды");
+            return;
         }
+
+        var args = parseArgs(
+                List.of(line).subList(1, line.length),
+                command.getFlagsSignature()
+        ).orElse(null);
+        if (args == null) {
+            System.out.println("Неправильный вызов команды");
+            return;
+        }
+        command.execute(scanner, rbacSystem, args);
+
     }
 
     void printHelp(String command_name) {
@@ -79,16 +89,13 @@ public class CommandParser {
 
     void printHelp() {
         for (Command command : commands) {
-
             System.out.println(command.getName());
-            System.out.println(command.getDescription());
 
             for (String str : command.getDescription().trim().split("\n")) {
                 System.out.println("\t" + str);
             }
         }
     }
-
 
 
 }

@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public record ArgumentSet(
         Map<String, List<String>> flags,
-        List<String> base_args
+        List<String> baseArgs
 ) {
 
     public boolean checkFlag(String flag) {

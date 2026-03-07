@@ -7,5 +7,5 @@ import java.util.Scanner;
 
 @FunctionalInterface
 public interface CommandAction {
-    void execute(Scanner scanner, RBACSystem rbacSystem, List<String> args);
+    void execute(Scanner scanner, RBACSystem rbacSystem, ArgumentSet args);
 }
