@@ -717,6 +717,19 @@ public class CommandRegistry {
                     System.out.flush();
                 }
         ));
-        // todo: exit
+        parser.registerCommand(new Command(
+                "audit-log",
+                """
+                        Просмотр логов
+                        usage: clear""",
+                new HashMap<>(),
+                0,
+                (_, system, _) -> {
+                    var logs = CustomDI.getLogger().getAll();
+                    for (var log : logs)
+                        System.out.println(log.toString());
+                }
+        ));
+
     }
 }

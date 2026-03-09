@@ -1,7 +1,7 @@
 package org.example;
 
 import org.example.command.CommandParser;
-import org.example.logs.AuditLog;
+import org.example.utils.AuditLog;
 import org.example.managers.AssignmentManager;
 import org.example.managers.RoleManager;
 import org.example.managers.UserManager;

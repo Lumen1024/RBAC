@@ -1,6 +1,4 @@
-package org.example.logs;
-
-import org.example.utils.ValidationUtils;
+package org.example.utils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
