@@ -1,25 +1,24 @@
-import org.example.User;
-
-void testUserCreation() {
-    User valid = User.create("john_doe", "John Doe", "john@example.com");
-
-    expectError("null username", () -> User.create(null, "John Doe", "john@example.com"));
-    expectError("blank username", () -> User.create("  ", "John Doe", "john@example.com"));
-    expectError("invalid username", () -> User.create("john doe!", "John Doe", "john@example.com"));
-    expectError("short username", () -> User.create("ab", "John Doe", "john@example.com"));
-    expectError("invalid email", () -> User.create("john_doe", "John Doe", "not-an-email"));
-    expectError("blank fullName", () -> User.create("john_doe", "", "john@example.com"));
-}
+import org.example.CustomDI;
+import org.example.RBACSystem;
+import org.example.command.CommandRegistry;
+import org.example.managers.AssignmentManager;
+import org.example.managers.RoleManager;
+import org.example.managers.UserManager;
 
 void main() {
-    testUserCreation();
-}
+    CustomDI.getRbacSystem().init();
+    var parser = CustomDI.getCommandParser();
+    CommandRegistry.registerUserCommands(parser);
+    CommandRegistry.registerRoleCommands(parser);
+    CommandRegistry.registerAssignmentCommands(parser);
+    CommandRegistry.registerPermissionCommands(parser);
+    CommandRegistry.registerAdditionalCommands(parser);
 
-void expectError(String label, Runnable action) {
-    try {
-        action.run();
-        System.out.println(label + ": исключение не выброшено");
-    } catch (Exception e) {
-        System.out.println(label + ": " + e.getMessage());
+    var scanner = new Scanner(System.in);
+    while (true) {
+        var input = scanner.nextLine();
+        if (input.toLowerCase().contains("exit"))
+            return;
+        parser.executeCommand(input, scanner);
     }
 }
