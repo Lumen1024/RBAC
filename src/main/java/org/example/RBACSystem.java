@@ -2,6 +2,9 @@ package org.example;
 
 import org.example.assignment.AssignmentMetadata;
 import org.example.assignment.PermanentAssignment;
+import org.example.data.Permission;
+import org.example.data.Role;
+import org.example.data.User;
 import org.example.managers.AssignmentManager;
 import org.example.managers.RoleManager;
 import org.example.managers.UserManager;

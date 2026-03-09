@@ -1,7 +1,7 @@
 package org.example.command;
 
 import org.example.RBACSystem;
-import org.example.User;
+import org.example.data.User;
 import org.example.managers.AssignmentManager;
 import org.example.managers.RoleManager;
 import org.example.managers.UserManager;

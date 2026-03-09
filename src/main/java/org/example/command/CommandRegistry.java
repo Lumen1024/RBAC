@@ -1,8 +1,8 @@
 package org.example.command;
 
-import org.example.Permission;
-import org.example.Role;
-import org.example.User;
+import org.example.data.Permission;
+import org.example.data.Role;
+import org.example.data.User;
 import org.example.assignment.AssignmentMetadata;
 import org.example.assignment.PermanentAssignment;
 import org.example.assignment.RoleAssignment;
@@ -578,7 +578,7 @@ public class CommandRegistry {
                         return;
                     }
 
-                    var grouped = new java.util.TreeMap<String, java.util.List<org.example.Permission>>();
+                    var grouped = new java.util.TreeMap<String, java.util.List<Permission>>();
                     for (var p : permissions) {
                         grouped.computeIfAbsent(p.resource(), _ -> new java.util.ArrayList<>()).add(p);
                     }

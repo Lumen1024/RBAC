@@ -1,6 +1,6 @@
 package org.example.managers;
 
-import org.example.User;
+import org.example.data.User;
 import org.example.filter.UserFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

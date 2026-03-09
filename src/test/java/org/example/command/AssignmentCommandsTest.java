@@ -1,9 +1,9 @@
 package org.example.command;
 
-import org.example.Permission;
+import org.example.data.Permission;
 import org.example.RBACSystem;
-import org.example.Role;
-import org.example.User;
+import org.example.data.Role;
+import org.example.data.User;
 import org.example.assignment.AssignmentMetadata;
 import org.example.assignment.PermanentAssignment;
 import org.example.assignment.TemporaryAssignment;

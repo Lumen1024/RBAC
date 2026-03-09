@@ -1,8 +1,8 @@
 package org.example.command;
 
-import org.example.Permission;
+import org.example.data.Permission;
 import org.example.RBACSystem;
-import org.example.Role;
+import org.example.data.Role;
 import org.example.managers.AssignmentManager;
 import org.example.managers.RoleManager;
 import org.example.managers.UserManager;

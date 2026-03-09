@@ -1,7 +1,7 @@
 package org.example.managers;
 
-import org.example.Permission;
-import org.example.Role;
+import org.example.data.Permission;
+import org.example.data.Role;
 import org.example.filter.RoleFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
