@@ -45,7 +45,7 @@ public class CommandParser {
         commands.add(command);
     }
 
-    void executeCommand(String input, Scanner scanner) {
+    public void executeCommand(String input, Scanner scanner) {
         if (input.isEmpty())
             return;
 

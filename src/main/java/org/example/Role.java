@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 public class Role {
     private final String id;
-    private final String name;
-    private final String description;
+    private String name;
+    private String description;
     private final Set<Permission> permissions;
 
     public Role(String name, String description) {
@@ -21,6 +21,14 @@ public class Role {
         this.name = name;
         this.description = description;
         this.permissions = new HashSet<>();
+    }
+
+    public void update(String newName, String newDescription) {
+        if (newName == null || newName.isBlank() || newDescription == null || newDescription.isBlank()) {
+            throw new IllegalArgumentException("Все поля должны содержать значения");
+        }
+        this.name = newName;
+        this.description = newDescription;
     }
 
     // region permissions
