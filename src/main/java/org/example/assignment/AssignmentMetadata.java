@@ -1,5 +1,7 @@
 package org.example.assignment;
 
+import org.example.utils.ValidationUtils;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -10,16 +12,17 @@ public record AssignmentMetadata(
 ) {
 
     public AssignmentMetadata {
-        if (assignedBy == null || assignedBy.isBlank() || assignedAt == null || assignedAt.isBlank()) {
-            throw new IllegalArgumentException("Все поля должны содержать значения");
-        }
-
+        ValidationUtils.requireNonEmpty(assignedAt, "assignedAt");
+        ValidationUtils.requireNonEmpty(assignedBy, "assignedBy");
         if (reason == null) {
             reason = "";
         }
     }
 
     public static AssignmentMetadata now(String assignedBy, String reason) {
+        ValidationUtils.requireNonEmpty(assignedBy, "assignedBy");
+        ValidationUtils.requireNonEmpty(reason, "reason");
+
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         return new AssignmentMetadata(assignedBy, timestamp, reason);
     }

@@ -2,6 +2,7 @@ package org.example.assignment;
 
 import org.example.data.Role;
 import org.example.data.User;
+import org.example.utils.ValidationUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,7 +12,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private String expiresAt;
-    private boolean autoRenew;
+    private final boolean autoRenew;
 
     public TemporaryAssignment(
             User user,
@@ -21,9 +22,8 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
             boolean autoRenew
     ) {
         super(user, role, metadata);
-        if (expiresAt == null || expiresAt.isBlank()) {
-            throw new IllegalArgumentException("expiresAt не может быть пустым");
-        }
+        ValidationUtils.requireNonEmpty(expiresAt, "expiresAt");
+
         this.expiresAt = expiresAt;
         this.autoRenew = autoRenew;
     }
@@ -43,9 +43,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     }
 
     public void extend(String newExpirationDate) {
-        if (newExpirationDate == null || newExpirationDate.isBlank()) {
-            throw new IllegalArgumentException("Новая дата не может быть пустой");
-        }
+        ValidationUtils.requireNonEmpty(newExpirationDate, "newExpirationDate");
         this.expiresAt = newExpirationDate;
     }
 
