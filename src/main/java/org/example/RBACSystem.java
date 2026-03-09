@@ -51,7 +51,7 @@ public class RBACSystem {
 
     // endregion
 
-    void init() {
+    public void init() {
         var read_users = new Permission("READ", "Users", "none");
         var write_users = new Permission("WRITE", "Users", "none");
         var delete_users = new Permission("DELETE", "Users", "none");
@@ -88,7 +88,7 @@ public class RBACSystem {
         ));
     }
 
-    String generateStatistics() {
+    public String generateStatistics() {
         return "Пользователей: %s, Ролей: %s, Назначений: %s".formatted(userManager.count(), roleManager.count(), assignmentManager.count());
     }
 

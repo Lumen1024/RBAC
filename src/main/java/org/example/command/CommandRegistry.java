@@ -556,5 +556,117 @@ public class CommandRegistry {
     }
 
 
+    public static void registerPermissionCommands(CommandParser parser) {
+        parser.registerCommand(new Command(
+                "permissions-user",
+                """
+                        Все права конкретного пользователя, сгруппированные по ресурсам
+                        usage: permissions-user <username>""",
+                new HashMap<>(),
+                1,
+                (_, system, args) -> {
+                    var username = args.baseArgs().getFirst();
+                    var user = system.getUserManager().findByUsername(username).orElse(null);
+                    if (user == null) {
+                        System.out.println("Пользователь не найден");
+                        return;
+                    }
+
+                    var permissions = system.getAssignmentManager().getUserPermissions(user);
+                    if (permissions.isEmpty()) {
+                        System.out.println("У пользователя нет прав");
+                        return;
+                    }
+
+                    var grouped = new java.util.TreeMap<String, java.util.List<org.example.Permission>>();
+                    for (var p : permissions) {
+                        grouped.computeIfAbsent(p.resource(), _ -> new java.util.ArrayList<>()).add(p);
+                    }
+
+                    System.out.println("Права пользователя " + username + ":");
+                    for (var entry : grouped.entrySet()) {
+                        System.out.println("  [" + entry.getKey() + "]");
+                        for (var p : entry.getValue()) {
+                            System.out.println("    - " + p.name() + ": " + p.description());
+                        }
+                    }
+                }
+        ));
+
+        parser.registerCommand(new Command(
+                "permissions-check",
+                """
+                        Проверить, есть ли у пользователя конкретное право
+                        usage: permissions-check <username> <permission-name> <resource>""",
+                new HashMap<>(),
+                3,
+                (_, system, args) -> {
+                    var username = args.baseArgs().getFirst();
+                    var permName = args.baseArgs().get(1);
+                    var resource = args.baseArgs().get(2);
+
+                    var user = system.getUserManager().findByUsername(username).orElse(null);
+                    if (user == null) {
+                        System.out.println("Пользователь не найден");
+                        return;
+                    }
+
+                    boolean hasPermission = system.getAssignmentManager().userHasPermission(user, permName, resource);
+                    if (hasPermission) {
+                        var sourceRole = system.getAssignmentManager().findByUser(user).stream()
+                                .filter(a -> a.isActive() && a.role().hasPermission(permName, resource))
+                                .findFirst()
+                                .map(a -> a.role().getName())
+                                .orElse("неизвестно");
+                        System.out.printf("✓ Пользователь %s ИМЕЕТ право %s on %s (из роли: %s)%n",
+                                username, permName.toUpperCase(), resource.toLowerCase(), sourceRole);
+                    } else {
+                        System.out.printf("✗ Пользователь %s НЕ ИМЕЕТ права %s on %s%n",
+                                username, permName.toUpperCase(), resource.toLowerCase());
+                    }
+                }
+        ));
+    }
+    public static void registerAdditionalCommands(CommandParser parser) {
+        parser.registerCommand(new Command(
+                "help",
+                """
+                        Справка по команде
+                        usage: help <command-name?>""",
+                new HashMap<>(),
+                0,
+                (_, system, args) -> {
+                    if (args.baseArgs().isEmpty()) {
+                        parser.printHelp();
+                    } else {
+                        parser.printHelp(args.baseArgs().get(0));
+                    }
+                }
+        ));
+
+        parser.registerCommand(new Command(
+                "stats",
+                """
+                        Статистика системы
+                        usage: stats""",
+                new HashMap<>(),
+                0,
+                (_, system, _) -> {
+                    System.out.println(system.generateStatistics());
+                }
+        ));
+        parser.registerCommand(new Command(
+                "clear",
+                """
+                        Очистка терминала
+                        usage: clear""",
+                new HashMap<>(),
+                0,
+                (_, system, _) -> {
+                    System.out.print("\033[H\033[2J");
+                    System.out.flush();
+                }
+        ));
+        // todo: exit
     }
 }
