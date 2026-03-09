@@ -1,12 +1,13 @@
 package org.example.command;
 
-import org.example.data.Permission;
-import org.example.data.Role;
-import org.example.data.User;
+import org.example.CustomDI;
 import org.example.assignment.AssignmentMetadata;
 import org.example.assignment.PermanentAssignment;
 import org.example.assignment.RoleAssignment;
 import org.example.assignment.TemporaryAssignment;
+import org.example.data.Permission;
+import org.example.data.Role;
+import org.example.data.User;
 import org.example.filter.UserFilters;
 
 import java.time.LocalDateTime;
@@ -69,6 +70,7 @@ public class CommandRegistry {
                     try {
                         var user = User.create(username, fullname, email);
                         system.getUserManager().add(user);
+                        CustomDI.getLogger().log("create user", system.getCurrentUser(), user.format(), null);
                     } catch (Exception e) {
                         System.out.println("Ошибка: " + e.getMessage());
                     }
@@ -111,11 +113,19 @@ public class CommandRegistry {
                     }
 
                     system.getUserManager().findByUsername(username).ifPresentOrElse(
-                            u -> system.getUserManager().update(
-                                    username,
-                                    fullname.orElseGet(u::fullName),
-                                    email.orElseGet(u::email)
-                            ),
+                            u -> {
+                                system.getUserManager().update(
+                                        username,
+                                        fullname.orElseGet(u::fullName),
+                                        email.orElseGet(u::email));
+                                CustomDI.getLogger().log(
+                                        "update user",
+                                        system.getCurrentUser(),
+                                        u.format(),
+                                        "by update-user"
+                                );
+                            }
+                            ,
                             () -> System.out.println("Пользователя не найдено")
                     );
                 }
@@ -141,10 +151,15 @@ public class CommandRegistry {
                             """, user.get().format());
 
                     if (scanner.next().equalsIgnoreCase("y")) {
+                        CustomDI.getLogger().log(
+                                "delete user", system.getCurrentUser(),
+                                user.get().format(), "by user-delete"
+                        );
                         for (var a : system.getAssignmentManager().findByUser(user.get()))
                             system.getAssignmentManager().remove(a);
                         system.getUserManager().remove(user.get());
                     }
+
                 }
         ));
     }
@@ -199,6 +214,10 @@ public class CommandRegistry {
                         system.getRoleManager().add(role);
                         System.out.println("Роль создана: " + role.getName());
                         System.out.println("Для добавления прав используйте: role-add-permission " + role.getName() + " <perm-name> <resource> <description>");
+                        CustomDI.getLogger().log(
+                                "create role", system.getCurrentUser(),
+                                role.format(), "by role-create"
+                        );
                     } catch (Exception e) {
                         System.out.println("Ошибка: " + e.getMessage());
                     }
@@ -243,11 +262,17 @@ public class CommandRegistry {
                     }
 
                     system.getRoleManager().findByName(roleName).ifPresentOrElse(
-                            r -> system.getRoleManager().update(
-                                    roleName,
-                                    newName.orElseGet(r::getName),
-                                    newDescription.orElseGet(r::getDescription)
-                            ),
+                            r -> {
+                                system.getRoleManager().update(
+                                        roleName,
+                                        newName.orElseGet(r::getName),
+                                        newDescription.orElseGet(r::getDescription)
+                                );
+                                CustomDI.getLogger().log(
+                                        "update role", system.getCurrentUser(),
+                                        r.format(), "by role-update"
+                                );
+                            },
                             () -> System.out.println("Роль не найдена")
                     );
                 }
@@ -283,6 +308,10 @@ public class CommandRegistry {
                             """, role.getName());
 
                     if (scanner.next().equalsIgnoreCase("y")) {
+                        CustomDI.getLogger().log(
+                                "delete role", system.getCurrentUser(),
+                                role.format(), "by role-delete"
+                        );
                         for (var a : assignments) {
                             system.getAssignmentManager().remove(a);
                         }
@@ -308,6 +337,10 @@ public class CommandRegistry {
                         var permission = new Permission(permName, resource, description);
                         system.getRoleManager().addPermissionToRole(roleName, permission);
                         System.out.println("Право добавлено: " + permission.format());
+                        CustomDI.getLogger().log(
+                                "add permission", system.getCurrentUser(),
+                                roleName + ": " + permission.format(), "by role-add-permission"
+                        );
                     } catch (Exception e) {
                         System.out.println("Ошибка: " + e.getMessage());
                     }
@@ -350,6 +383,10 @@ public class CommandRegistry {
                         var permission = permissions.get(index);
                         system.getRoleManager().removePermissionFromRole(roleName, permission);
                         System.out.println("Право удалено: " + permission.format());
+                        CustomDI.getLogger().log(
+                                "remove permission", system.getCurrentUser(),
+                                roleName + ": " + permission.format(), "by role-remove-permission"
+                        );
                     } catch (NumberFormatException e) {
                         System.out.println("Введите корректный номер");
                     }
@@ -394,6 +431,10 @@ public class CommandRegistry {
                         system.getAssignmentManager().add(assignment);
                         System.out.printf("Роль «%s» назначена пользователю %s (%s)%n",
                                 roleName, username, assignment.assignmentType());
+                        CustomDI.getLogger().log(
+                                "assign role", system.getCurrentUser(),
+                                username + " -> " + roleName, "by assign-role"
+                        );
                     } catch (Exception e) {
                         System.out.println("Ошибка: " + e.getMessage());
                     }
@@ -438,6 +479,10 @@ public class CommandRegistry {
                     } else {
                         system.getAssignmentManager().remove(assignment);
                     }
+                    CustomDI.getLogger().log(
+                            "revoke role", system.getCurrentUser(),
+                            username + " -> " + roleName, "by revoke-role"
+                    );
                     System.out.println("Роль «" + roleName + "» отозвана у пользователя " + username);
                 }
         ));
@@ -486,7 +531,7 @@ public class CommandRegistry {
                             .filter(a -> args.getFlagValue("--expires-before")
                                     .map(v -> a instanceof TemporaryAssignment temp
                                             && LocalDateTime.parse(temp.getExpiresAt())
-                                                    .isBefore(LocalDateTime.parse(v)))
+                                            .isBefore(LocalDateTime.parse(v)))
                                     .orElse(true))
                             .toList();
 
@@ -548,6 +593,10 @@ public class CommandRegistry {
                     try {
                         system.getAssignmentManager().extendTemporaryAssignment(assignment.assignmentId(), newDate);
                         System.out.println("Назначение продлено до: " + newDate);
+                        CustomDI.getLogger().log(
+                                "extend assignment", system.getCurrentUser(),
+                                username + " -> " + roleName, "by assignment-extend"
+                        );
                     } catch (Exception e) {
                         System.out.println("Ошибка: " + e.getMessage());
                     }
@@ -627,6 +676,7 @@ public class CommandRegistry {
                 }
         ));
     }
+
     public static void registerAdditionalCommands(CommandParser parser) {
         parser.registerCommand(new Command(
                 "help",

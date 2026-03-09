@@ -1,6 +1,7 @@
 package org.example;
 
 import org.example.command.CommandParser;
+import org.example.logs.AuditLog;
 import org.example.managers.AssignmentManager;
 import org.example.managers.RoleManager;
 import org.example.managers.UserManager;
@@ -13,6 +14,7 @@ public class CustomDI {
     private static AssignmentManager assignmentManager = null;
     private static RBACSystem rbacSystem = null;
     private static CommandParser commandParser = null;
+    private static AuditLog logger = null;
 
 
     public static synchronized UserManager getUserManager() {
@@ -49,4 +51,13 @@ public class CustomDI {
 
         return commandParser;
     }
+
+    public static synchronized AuditLog getLogger() {
+        if (logger == null)
+            logger =  new AuditLog();
+
+        return logger;
+    }
+
+
 }
