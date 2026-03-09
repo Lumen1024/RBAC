@@ -5,6 +5,7 @@ import org.example.utils.AuditLog;
 import org.example.managers.AssignmentManager;
 import org.example.managers.RoleManager;
 import org.example.managers.UserManager;
+import org.example.utils.ReportGenerator;
 
 public class CustomDI {
     private final static String CURRENT_USER = "Misha";
@@ -15,6 +16,7 @@ public class CustomDI {
     private static RBACSystem rbacSystem = null;
     private static CommandParser commandParser = null;
     private static AuditLog logger = null;
+    private static ReportGenerator reportGenerator = null;
 
 
     public static synchronized UserManager getUserManager() {
@@ -57,6 +59,12 @@ public class CustomDI {
             logger =  new AuditLog();
 
         return logger;
+    }
+    public static synchronized ReportGenerator getReportGenerator() {
+        if (reportGenerator == null)
+            reportGenerator =  new ReportGenerator(getRbacSystem());
+
+        return reportGenerator;
     }
 
 

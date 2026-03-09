@@ -721,13 +721,85 @@ public class CommandRegistry {
                 "audit-log",
                 """
                         Просмотр логов
-                        usage: clear""",
+                        usage: audit-log""",
                 new HashMap<>(),
                 0,
                 (_, system, _) -> {
                     var logs = CustomDI.getLogger().getAll();
                     for (var log : logs)
                         System.out.println(log.toString());
+                }
+        ));
+        parser.registerCommand(new Command(
+                "report-users",
+                """
+                        отчёт по пользователям
+                        usage: report-users
+                        flags:
+                            -s <path> - сохранить в файл
+                        """,
+                Map.ofEntries(
+                        Map.entry("-s", 1)
+                ),
+                0,
+                (_, system, args) -> {
+                    var report = CustomDI.getReportGenerator().generateUserReport();
+                    var path = args.getFlagValue("-s");
+
+                    if (path.isEmpty()) {
+                        System.out.println(report);
+                        return;
+                    }
+
+                    CustomDI.getReportGenerator().exportToFile(report, path.get());
+                }
+        ));
+        parser.registerCommand(new Command(
+                "report-roles",
+                """
+                        отчёт по ролям
+                        usage: report-roles
+                        flags:
+                            -s <path> - сохранить в файл
+                        """,
+                Map.ofEntries(
+                        Map.entry("-s", 1)
+                ),
+                0,
+                (_, system, args) -> {
+                    var report = CustomDI.getReportGenerator().generateRoleReport();
+                    var path = args.getFlagValue("-s");
+
+                    if (path.isEmpty()) {
+                        System.out.println(report);
+                        return;
+                    }
+
+                    CustomDI.getReportGenerator().exportToFile(report, path.get());
+                }
+        ));
+        parser.registerCommand(new Command(
+                "report-matrix",
+                """
+                        матрица прав
+                        usage: report-matrix
+                        flags:
+                            -s <path> - сохранить в файл
+                        """,
+                Map.ofEntries(
+                        Map.entry("-s", 1)
+                ),
+                0,
+                (_, system, args) -> {
+                    var report = CustomDI.getReportGenerator().generatePermissionMatrix();
+                    var path = args.getFlagValue("-s");
+
+                    if (path.isEmpty()) {
+                        System.out.println(report);
+                        return;
+                    }
+
+                    CustomDI.getReportGenerator().exportToFile(report, path.get());
                 }
         ));
 
