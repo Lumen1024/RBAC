@@ -19,6 +19,8 @@ public class Role {
         ValidationUtils.requireNonEmpty(description, "description");
 
         this.id = "role_" + UUID.randomUUID();
+//        this.name = ValidationUtils.normalizeString(name);
+//        this.description = ValidationUtils.normalizeString(description);
         this.name = name;
         this.description = description;
         this.permissions = new HashSet<>();

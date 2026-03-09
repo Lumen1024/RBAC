@@ -14,6 +14,8 @@ public record AssignmentMetadata(
     public AssignmentMetadata {
         ValidationUtils.requireNonEmpty(assignedAt, "assignedAt");
         ValidationUtils.requireNonEmpty(assignedBy, "assignedBy");
+        if (ValidationUtils.isValidDate(assignedAt))
+            throw new IllegalArgumentException("invalid time format");
         if (reason == null) {
             reason = "";
         }

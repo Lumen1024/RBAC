@@ -2,6 +2,7 @@ package org.example.assignment;
 
 import org.example.data.Role;
 import org.example.data.User;
+import org.example.utils.ValidationUtils;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -13,9 +14,10 @@ public abstract class AbstractRoleAssignment implements RoleAssignment {
     private final AssignmentMetadata metadata;
 
     protected AbstractRoleAssignment(User user, Role role, AssignmentMetadata metadata) {
-        if (user == null || role == null || metadata == null) {
-            throw new IllegalArgumentException("Все поля должны содержать значения");
-        }
+        Objects.requireNonNull(user);
+        Objects.requireNonNull(role);
+        Objects.requireNonNull(metadata);
+
         this.assignmentId = "assign_" + UUID.randomUUID();
         this.user = user;
         this.role = role;

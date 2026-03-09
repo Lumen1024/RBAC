@@ -15,9 +15,11 @@ public record User(
         ValidationUtils.requireNonEmpty(fullName, "fullName");
         ValidationUtils.requireNonEmpty(email, "email");
 
-        if(ValidationUtils.isValidUsername(username))
+        email = ValidationUtils.normalizeString(email);
+
+        if (!ValidationUtils.isValidUsername(username))
             throw new IllegalArgumentException("username должен содержать только латинские буквы, цифры и подчёркивание (3–20 символов)");
-        if (ValidationUtils.isValidEmail(email))
+        if (!ValidationUtils.isValidEmail(email))
             throw new IllegalArgumentException("email должен соответствовать формату");
 
         return new User(username, fullName, email);

@@ -1,6 +1,7 @@
 package org.example.command;
 
 import org.example.RBACSystem;
+import org.example.utils.ValidationUtils;
 
 import java.util.*;
 
@@ -46,10 +47,9 @@ public class CommandParser {
     }
 
     public void executeCommand(String input, Scanner scanner) {
-        if (input.isEmpty())
-            return;
-
-        var line = input.trim().split("\\s+");
+        ValidationUtils.requireNonEmpty(input, "input");
+        var formatted_input = input.trim().replaceAll("\\s+", " ");
+        var line = formatted_input.split(" ");
 
         var command = commands.stream()
                 .filter(c -> c.getName().equals(line[0]))

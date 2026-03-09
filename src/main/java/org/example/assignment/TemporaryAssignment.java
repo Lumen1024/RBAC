@@ -23,6 +23,8 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     ) {
         super(user, role, metadata);
         ValidationUtils.requireNonEmpty(expiresAt, "expiresAt");
+        if (ValidationUtils.isValidDate(expiresAt))
+            throw new IllegalArgumentException("invalid time format");
 
         this.expiresAt = expiresAt;
         this.autoRenew = autoRenew;
@@ -44,6 +46,8 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
 
     public void extend(String newExpirationDate) {
         ValidationUtils.requireNonEmpty(newExpirationDate, "newExpirationDate");
+        if (ValidationUtils.isValidDate(newExpirationDate))
+            throw new IllegalArgumentException("invalid time format");
         this.expiresAt = newExpirationDate;
     }
 
