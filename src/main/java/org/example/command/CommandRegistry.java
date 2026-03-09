@@ -357,6 +357,204 @@ public class CommandRegistry {
         ));
     }
 
+    public static void registerAssignmentCommands(CommandParser parser) {
+        parser.registerCommand(new Command(
+                "assign-role",
+                """
+                        Назначить роль пользователю
+                        usage: assign-role <username> <role-name> <reason>
+                        flags:
+                            --temporary <date> - временное назначение до указанной даты (ISO: 2024-12-31T23:59:59)""",
+                Map.of("--temporary", 1),
+                3,
+                (_, system, args) -> {
+                    var username = args.baseArgs().getFirst();
+                    var roleName = args.baseArgs().get(1);
+                    var reason = args.baseArgs().get(2);
+
+                    var user = system.getUserManager().findByUsername(username).orElse(null);
+                    if (user == null) {
+                        System.out.println("Пользователь не найден");
+                        return;
+                    }
+
+                    var role = system.getRoleManager().findByName(roleName).orElse(null);
+                    if (role == null) {
+                        System.out.println("Роль не найдена");
+                        return;
+                    }
+
+                    var metadata = AssignmentMetadata.now(system.getCurrentUser(), reason);
+                    var expiresAt = args.getFlagValue("--temporary");
+
+                    try {
+                        RoleAssignment assignment = expiresAt.isPresent()
+                                ? new TemporaryAssignment(user, role, metadata, expiresAt.get(), false)
+                                : new PermanentAssignment(user, role, metadata);
+                        system.getAssignmentManager().add(assignment);
+                        System.out.printf("Роль «%s» назначена пользователю %s (%s)%n",
+                                roleName, username, assignment.assignmentType());
+                    } catch (Exception e) {
+                        System.out.println("Ошибка: " + e.getMessage());
+                    }
+                }
+        ));
+
+        parser.registerCommand(new Command(
+                "revoke-role",
+                """
+                        Отозвать роль у пользователя
+                        usage: revoke-role <username> <role-name>""",
+                new HashMap<>(),
+                2,
+                (_, system, args) -> {
+                    var username = args.baseArgs().getFirst();
+                    var roleName = args.baseArgs().get(1);
+
+                    var user = system.getUserManager().findByUsername(username).orElse(null);
+                    if (user == null) {
+                        System.out.println("Пользователь не найден");
+                        return;
+                    }
+
+                    var role = system.getRoleManager().findByName(roleName).orElse(null);
+                    if (role == null) {
+                        System.out.println("Роль не найдена");
+                        return;
+                    }
+
+                    var assignment = system.getAssignmentManager().findAll().stream()
+                            .filter(a -> a.user().equals(user) && a.role().equals(role) && a.isActive())
+                            .findFirst()
+                            .orElse(null);
+
+                    if (assignment == null) {
+                        System.out.println("Активное назначение не найдено");
+                        return;
+                    }
+
+                    if (assignment instanceof PermanentAssignment perm) {
+                        perm.revoke();
+                    } else {
+                        system.getAssignmentManager().remove(assignment);
+                    }
+                    System.out.println("Роль «" + roleName + "» отозвана у пользователя " + username);
+                }
+        ));
+
+        parser.registerCommand(new Command(
+                "assignment-list",
+                """
+                        Список всех назначений
+                        flags:
+                            --username <value> - фильтр по пользователю
+                            --role <value> - фильтр по роли
+                            --type <PERMANENT|TEMPORARY> - фильтр по типу
+                            --status <active|inactive> - фильтр по статусу
+                            --assigned-after <date> - назначённые после даты (ISO: 2024-01-01T00:00:00)
+                            --expires-before <date> - истекающие до даты (ISO: 2024-12-31T23:59:59)""",
+                Map.ofEntries(
+                        Map.entry("--username", 1),
+                        Map.entry("--role", 1),
+                        Map.entry("--type", 1),
+                        Map.entry("--status", 1),
+                        Map.entry("--assigned-after", 1),
+                        Map.entry("--expires-before", 1)
+                ),
+                (_, system, args) -> {
+                    var assignments = system.getAssignmentManager().findAll().stream()
+                            .filter(a -> args.getFlagValue("--username")
+                                    .map(v -> a.user().username().toLowerCase().contains(v.toLowerCase()))
+                                    .orElse(true))
+                            .filter(a -> args.getFlagValue("--role")
+                                    .map(v -> a.role().getName().toLowerCase().contains(v.toLowerCase()))
+                                    .orElse(true))
+                            .filter(a -> args.getFlagValue("--type")
+                                    .map(v -> a.assignmentType().equalsIgnoreCase(v))
+                                    .orElse(true))
+                            .filter(a -> args.getFlagValue("--status")
+                                    .map(v -> switch (v.toLowerCase()) {
+                                        case "active" -> a.isActive();
+                                        case "inactive" -> !a.isActive();
+                                        default -> true;
+                                    })
+                                    .orElse(true))
+                            .filter(a -> args.getFlagValue("--assigned-after")
+                                    .map(v -> LocalDateTime.parse(a.metadata().assignedAt())
+                                            .isAfter(LocalDateTime.parse(v)))
+                                    .orElse(true))
+                            .filter(a -> args.getFlagValue("--expires-before")
+                                    .map(v -> a instanceof TemporaryAssignment temp
+                                            && LocalDateTime.parse(temp.getExpiresAt())
+                                                    .isBefore(LocalDateTime.parse(v)))
+                                    .orElse(true))
+                            .toList();
+
+                    if (assignments.isEmpty()) {
+                        System.out.println("Назначения не найдены");
+                        return;
+                    }
+
+                    System.out.printf("%-20s | %-20s | %-9s | %-8s | %s%n",
+                            "USERNAME", "ROLE", "TYPE", "STATUS", "ASSIGNED AT");
+                    System.out.println("-".repeat(85));
+                    for (var a : assignments) {
+                        System.out.printf("%-20s | %-20s | %-9s | %-8s | %s%n",
+                                a.user().username(),
+                                a.role().getName(),
+                                a.assignmentType(),
+                                a.isActive() ? "ACTIVE" : "INACTIVE",
+                                a.metadata().assignedAt());
+                    }
+                }
+        ));
+
+        parser.registerCommand(new Command(
+                "assignment-extend",
+                """
+                        Продлить временное назначение
+                        usage: assignment-extend <username> <role-name> <new-date>
+                        date format: ISO (например: 2024-12-31T23:59:59)""",
+                new HashMap<>(),
+                3,
+                (_, system, args) -> {
+                    var username = args.baseArgs().getFirst();
+                    var roleName = args.baseArgs().get(1);
+                    var newDate = args.baseArgs().get(2);
+
+                    var user = system.getUserManager().findByUsername(username).orElse(null);
+                    if (user == null) {
+                        System.out.println("Пользователь не найден");
+                        return;
+                    }
+
+                    var role = system.getRoleManager().findByName(roleName).orElse(null);
+                    if (role == null) {
+                        System.out.println("Роль не найдена");
+                        return;
+                    }
+
+                    var assignment = system.getAssignmentManager().findAll().stream()
+                            .filter(a -> a.user().equals(user) && a.role().equals(role)
+                                    && a instanceof TemporaryAssignment)
+                            .findFirst()
+                            .orElse(null);
+
+                    if (assignment == null) {
+                        System.out.println("Временное назначение не найдено");
+                        return;
+                    }
+
+                    try {
+                        system.getAssignmentManager().extendTemporaryAssignment(assignment.assignmentId(), newDate);
+                        System.out.println("Назначение продлено до: " + newDate);
+                    } catch (Exception e) {
+                        System.out.println("Ошибка: " + e.getMessage());
+                    }
+                }
+        ));
+    }
+
 
     }
 }
