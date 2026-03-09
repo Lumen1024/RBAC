@@ -1,7 +1,7 @@
 package org.example.managers;
 
-import org.example.Permission;
-import org.example.Role;
+import org.example.data.Permission;
+import org.example.data.Role;
 import org.example.filter.RoleFilter;
 
 import java.util.*;
@@ -89,6 +89,16 @@ public class RoleManager implements Repository<Role> {
 
     public boolean exists(String name) {
         return byName.containsKey(name);
+    }
+
+    public void update(String roleName, String newName, String newDescription) {
+        Role role = getExistingByName(roleName);
+        if (!roleName.equals(newName) && byName.containsKey(newName)) {
+            throw new IllegalStateException("Роль с именем '%s' уже существует".formatted(newName));
+        }
+        byName.remove(roleName);
+        role.update(newName, newDescription);
+        byName.put(newName, role);
     }
 
     public void addPermissionToRole(String roleName, Permission permission) {

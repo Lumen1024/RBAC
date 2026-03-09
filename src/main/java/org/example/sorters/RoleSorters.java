@@ -1,6 +1,6 @@
 package org.example.sorters;
 
-import org.example.Role;
+import org.example.data.Role;
 
 import java.util.Comparator;
 

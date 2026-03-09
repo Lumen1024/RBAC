@@ -1,7 +1,7 @@
 package org.example.filter;
 
-import org.example.Role;
-import org.example.User;
+import org.example.data.Role;
+import org.example.data.User;
 import org.example.assignment.RoleAssignment;
 import org.example.assignment.TemporaryAssignment;
 

@@ -1,6 +1,6 @@
 package org.example.filter;
 
-import org.example.Permission;
+import org.example.data.Permission;
 
 public class RoleFilters {
 

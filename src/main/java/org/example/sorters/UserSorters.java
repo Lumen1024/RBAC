@@ -1,6 +1,6 @@
 package org.example.sorters;
 
-import org.example.User;
+import org.example.data.User;
 
 import java.util.Comparator;
 
