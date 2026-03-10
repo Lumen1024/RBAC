@@ -1,6 +1,7 @@
 package org.example.command;
 
 import org.example.RBACSystem;
+import org.example.utils.ConsoleUtils;
 import org.example.utils.ValidationUtils;
 
 import java.util.*;
@@ -48,8 +49,7 @@ public class CommandParser {
 
     public void executeCommand(String input, Scanner scanner) {
         ValidationUtils.requireNonEmpty(input, "input");
-        var formatted_input = input.trim().replaceAll("\\s+", " ");
-        var line = formatted_input.split(" ");
+        var line = input.trim().replaceAll("\\s+", " ").split(" ");
 
         var command = commands.stream()
                 .filter(c -> c.getName().equals(line[0]))
@@ -57,7 +57,7 @@ public class CommandParser {
                 .orElse(null);
 
         if (command == null) {
-            System.out.println("Нет такой команды");
+            ConsoleUtils.printError("Нет такой команды");
             return;
         }
 
@@ -66,11 +66,10 @@ public class CommandParser {
                 command.getFlagsSignature()
         ).orElse(null);
         if (args == null) {
-            System.out.println("Неправильный вызов команды");
+            ConsoleUtils.printError("Неправильный вызов команды");
             return;
         }
         command.execute(scanner, rbacSystem, args);
-
     }
 
     void printHelp(String command_name) {
@@ -80,7 +79,7 @@ public class CommandParser {
                 .orElse(null);
 
         if (command == null) {
-            System.out.println("Нет такой команды");
+            ConsoleUtils.printError("Нет такой команды");
             return;
         }
 
