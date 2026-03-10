@@ -1,5 +1,7 @@
 package org.example.data;
 
+import org.example.utils.ValidationUtils;
+
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -8,25 +10,26 @@ import java.util.stream.Collectors;
 
 public class Role {
     private final String id;
+    private final Set<Permission> permissions;
     private String name;
     private String description;
-    private final Set<Permission> permissions;
 
     public Role(String name, String description) {
-        if (name == null || name.isBlank() || description == null || description.isBlank()) {
-            throw new IllegalArgumentException("Все поля должны содержать значения");
-        }
+        ValidationUtils.requireNonEmpty(name, "name");
+        ValidationUtils.requireNonEmpty(description, "description");
 
         this.id = "role_" + UUID.randomUUID();
+//        this.name = ValidationUtils.normalizeString(name);
+//        this.description = ValidationUtils.normalizeString(description);
         this.name = name;
         this.description = description;
         this.permissions = new HashSet<>();
     }
 
     public void update(String newName, String newDescription) {
-        if (newName == null || newName.isBlank() || newDescription == null || newDescription.isBlank()) {
-            throw new IllegalArgumentException("Все поля должны содержать значения");
-        }
+        ValidationUtils.requireNonEmpty(newName, "newName");
+        ValidationUtils.requireNonEmpty(newDescription, "newDescription");
+
         this.name = newName;
         this.description = newDescription;
     }
@@ -46,7 +49,8 @@ public class Role {
     }
 
     public boolean hasPermission(String permissionName, String resource) {
-        return permissions.stream().anyMatch(p -> p.name().equalsIgnoreCase(permissionName) && p.resource().equalsIgnoreCase(resource));
+        return permissions.stream().anyMatch(p ->
+                p.name().equalsIgnoreCase(permissionName) && p.resource().equalsIgnoreCase(resource));
     }
 
     // endregion

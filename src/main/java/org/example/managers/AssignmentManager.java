@@ -1,10 +1,10 @@
 package org.example.managers;
 
+import org.example.assignment.RoleAssignment;
+import org.example.assignment.TemporaryAssignment;
 import org.example.data.Permission;
 import org.example.data.Role;
 import org.example.data.User;
-import org.example.assignment.RoleAssignment;
-import org.example.assignment.TemporaryAssignment;
 import org.example.filter.AssignmentFilter;
 
 import java.util.*;
@@ -128,8 +128,9 @@ public class AssignmentManager implements Repository<RoleAssignment> {
 
     public boolean userHasPermission(User user, String permissionName, String resource) {
         Objects.requireNonNull(user, "Пользователь не может быть null");
-        Objects.requireNonNull(permissionName, "Имя разрешения не может быть null");
-        Objects.requireNonNull(resource, "Ресурс не может быть null");
+        Objects.requireNonNull(permissionName, "permissionName не может быть null");
+        Objects.requireNonNull(resource, "resource не может быть null");
+
         return assignments.values().stream()
                 .filter(a -> a.user().equals(user) && a.isActive())
                 .anyMatch(a -> a.role().hasPermission(permissionName, resource));
@@ -144,17 +145,16 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     public void revokeAssignment(String assignmentId) {
-        Objects.requireNonNull(assignmentId, "ID назначения не может быть null");
-        if (!assignments.containsKey(assignmentId)) {
-            throw new NoSuchElementException(
-                    "Назначение с ID '%s' не найдено".formatted(assignmentId));
-        }
+        Objects.requireNonNull(assignmentId, "assignmentId не может быть null");
+        if (!assignments.containsKey(assignmentId))
+            throw new NoSuchElementException("Назначение с ID '%s' не найдено".formatted(assignmentId));
+
         assignments.remove(assignmentId);
     }
 
     public void extendTemporaryAssignment(String assignmentId, String newExpirationDate) {
-        Objects.requireNonNull(assignmentId, "ID назначения не может быть null");
-        Objects.requireNonNull(newExpirationDate, "Новая дата истечения не может быть null");
+        Objects.requireNonNull(assignmentId, "assignmentId не может быть null");
+        Objects.requireNonNull(newExpirationDate, "newExpirationDate не может быть null");
 
         RoleAssignment assignment = assignments.get(assignmentId);
         if (assignment == null) {

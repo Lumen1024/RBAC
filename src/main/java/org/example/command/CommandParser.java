@@ -1,6 +1,8 @@
 package org.example.command;
 
 import org.example.RBACSystem;
+import org.example.utils.ConsoleUtils;
+import org.example.utils.ValidationUtils;
 
 import java.util.*;
 
@@ -18,6 +20,9 @@ public class CommandParser {
         var base_args = new ArrayList<String>();
 
         for (int i = 0; i < args.size(); i++) {
+            if (args.get(i).startsWith("-") && !flags_signature.containsKey(args.get(i)))
+                return Optional.empty();
+
             if (flags_signature.containsKey(args.get(i))) {
                 var flag_name = args.get(i);
                 var flag_values_count = flags_signature.get(flag_name);
@@ -46,10 +51,8 @@ public class CommandParser {
     }
 
     public void executeCommand(String input, Scanner scanner) {
-        if (input.isEmpty())
-            return;
-
-        var line = input.trim().split("\\s+");
+        ValidationUtils.requireNonEmpty(input, "input");
+        var line = input.trim().replaceAll("\\s+", " ").split(" ");
 
         var command = commands.stream()
                 .filter(c -> c.getName().equals(line[0]))
@@ -57,7 +60,7 @@ public class CommandParser {
                 .orElse(null);
 
         if (command == null) {
-            System.out.println("Нет такой команды");
+            ConsoleUtils.printError("Нет такой команды");
             return;
         }
 
@@ -66,11 +69,18 @@ public class CommandParser {
                 command.getFlagsSignature()
         ).orElse(null);
         if (args == null) {
-            System.out.println("Неправильный вызов команды");
+            ConsoleUtils.printError("Неправильный вызов команды");
             return;
         }
-        command.execute(scanner, rbacSystem, args);
-
+        if (args.baseArgs().size() < command.getBaseArgCount()) {
+            ConsoleUtils.printError("Недостаточно аргументов. Использование:");
+            System.out.println(command.getDescription());
+            return;
+        }
+        try {
+            command.execute(scanner, rbacSystem, args);
+        } catch (java.util.NoSuchElementException ignored) {
+        }
     }
 
     void printHelp(String command_name) {
@@ -80,7 +90,7 @@ public class CommandParser {
                 .orElse(null);
 
         if (command == null) {
-            System.out.println("Нет такой команды");
+            ConsoleUtils.printError("Нет такой команды");
             return;
         }
 

@@ -1,13 +1,19 @@
 package org.example.command;
 
-import org.example.data.Permission;
-import org.example.data.Role;
-import org.example.data.User;
+import org.example.CustomDI;
 import org.example.assignment.AssignmentMetadata;
 import org.example.assignment.PermanentAssignment;
 import org.example.assignment.RoleAssignment;
 import org.example.assignment.TemporaryAssignment;
+import org.example.data.Permission;
+import org.example.data.Role;
+import org.example.data.User;
 import org.example.filter.UserFilters;
+import org.example.sorters.AssignmentSorters;
+import org.example.sorters.RoleSorters;
+import org.example.sorters.UserSorters;
+import org.example.utils.ConsoleUtils;
+import org.example.utils.FormatUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -47,11 +53,14 @@ public class CommandRegistry {
                             .filter(u -> args.getFlagValue("--fullname")
                                     .map(v -> UserFilters.byFullNameContains(v).test(u))
                                     .orElse(true))
+                            .sorted(UserSorters.byUsername())
                             .toList();
 
-                    for (User user : users) {
-                        System.out.println(user.format());
-                    }
+                    var headers = new String[]{"USERNAME", "FULLNAME", "EMAIL"};
+                    var rows = users.stream()
+                            .map(u -> new String[]{u.username(), u.fullName(), u.email()})
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Список пользователей", headers, rows));
                 }
         ));
         parser.registerCommand(new Command(
@@ -69,8 +78,9 @@ public class CommandRegistry {
                     try {
                         var user = User.create(username, fullname, email);
                         system.getUserManager().add(user);
+                        CustomDI.getLogger().log("create user", system.getCurrentUser(), user.format(), null);
                     } catch (Exception e) {
-                        System.out.println("Ошибка: " + e.getMessage());
+                        ConsoleUtils.printError("Ошибка: " + e.getMessage());
                     }
                 }
         ));
@@ -83,7 +93,7 @@ public class CommandRegistry {
                     var username = args.baseArgs().getFirst();
                     system.getUserManager().findByUsername(username).ifPresentOrElse(
                             u -> System.out.println(u.format()),
-                            () -> System.out.println("Пользователя не найдено")
+                            () -> ConsoleUtils.printError("Пользователя не найдено")
                     );
                 }
         ));
@@ -106,17 +116,25 @@ public class CommandRegistry {
                     var email = args.getFlagValue("--email");
 
                     if (email.isEmpty() && fullname.isEmpty()) {
-                        System.out.println("Не передано флагов для обновления полей");
+                        ConsoleUtils.printError("Не передано флагов для обновления полей");
                         return;
                     }
 
                     system.getUserManager().findByUsername(username).ifPresentOrElse(
-                            u -> system.getUserManager().update(
-                                    username,
-                                    fullname.orElseGet(u::fullName),
-                                    email.orElseGet(u::email)
-                            ),
-                            () -> System.out.println("Пользователя не найдено")
+                            u -> {
+                                system.getUserManager().update(
+                                        username,
+                                        fullname.orElseGet(u::fullName),
+                                        email.orElseGet(u::email));
+                                CustomDI.getLogger().log(
+                                        "update user",
+                                        system.getCurrentUser(),
+                                        u.format(),
+                                        "by update-user"
+                                );
+                            }
+                            ,
+                            () -> ConsoleUtils.printError("Пользователя не найдено")
                     );
                 }
         ));
@@ -131,20 +149,20 @@ public class CommandRegistry {
                     var username = args.baseArgs().getFirst();
                     var user = system.getUserManager().findByUsername(username);
                     if (user.isEmpty()) {
-                        System.out.println("Пользователя не найдено");
+                        ConsoleUtils.printError("Пользователя не найдено");
                         return;
                     }
-                    System.out.printf("""
-                            Точно хотите удалить пользователя:
-                                %s
-                            [Y/N]:
-                            """, user.get().format());
 
-                    if (scanner.next().equalsIgnoreCase("y")) {
+                    if (ConsoleUtils.promptYesNo(scanner, "Точно хотите удалить пользователя")) {
+                        CustomDI.getLogger().log(
+                                "delete user", system.getCurrentUser(),
+                                user.get().format(), "by user-delete"
+                        );
                         for (var a : system.getAssignmentManager().findByUser(user.get()))
                             system.getAssignmentManager().remove(a);
                         system.getUserManager().remove(user.get());
                     }
+
                 }
         ));
     }
@@ -175,11 +193,14 @@ public class CommandRegistry {
                             .filter(r -> args.getFlagValue("--min-permissions")
                                     .map(v -> r.getPermissions().size() >= Integer.parseInt(v))
                                     .orElse(true))
+                            .sorted(RoleSorters.byName())
                             .toList();
 
-                    for (var role : roles) {
-                        System.out.println(role.format());
-                    }
+                    var headers = new String[]{"NAME", "DESCRIPTION", "PERMISSIONS"};
+                    var rows = roles.stream()
+                            .map(r -> new String[]{r.getName(), r.getDescription(), String.valueOf(r.getPermissions().size())})
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Список ролей", headers, rows));
                 }
         ));
 
@@ -197,10 +218,14 @@ public class CommandRegistry {
                     try {
                         var role = new Role(name, description);
                         system.getRoleManager().add(role);
-                        System.out.println("Роль создана: " + role.getName());
-                        System.out.println("Для добавления прав используйте: role-add-permission " + role.getName() + " <perm-name> <resource> <description>");
+                        ConsoleUtils.printSuccess("Роль создана: " + role.getName());
+                        ConsoleUtils.printInfo("Для добавления прав используйте: role-add-permission " + role.getName() + " <perm-name> <resource> <description>");
+                        CustomDI.getLogger().log(
+                                "create role", system.getCurrentUser(),
+                                role.format(), "by role-create"
+                        );
                     } catch (Exception e) {
-                        System.out.println("Ошибка: " + e.getMessage());
+                        ConsoleUtils.printError("Ошибка: " + e.getMessage());
                     }
                 }
         ));
@@ -214,7 +239,7 @@ public class CommandRegistry {
                     var name = args.baseArgs().getFirst();
                     system.getRoleManager().findByName(name).ifPresentOrElse(
                             r -> System.out.println(r.format()),
-                            () -> System.out.println("Роль не найдена")
+                            () -> ConsoleUtils.printError("Роль не найдена")
                     );
                 }
         ));
@@ -238,17 +263,23 @@ public class CommandRegistry {
                     var newDescription = args.getFlagValue("--description");
 
                     if (newName.isEmpty() && newDescription.isEmpty()) {
-                        System.out.println("Не передано флагов для обновления полей");
+                        ConsoleUtils.printError("Не передано флагов для обновления полей");
                         return;
                     }
 
                     system.getRoleManager().findByName(roleName).ifPresentOrElse(
-                            r -> system.getRoleManager().update(
-                                    roleName,
-                                    newName.orElseGet(r::getName),
-                                    newDescription.orElseGet(r::getDescription)
-                            ),
-                            () -> System.out.println("Роль не найдена")
+                            r -> {
+                                system.getRoleManager().update(
+                                        roleName,
+                                        newName.orElseGet(r::getName),
+                                        newDescription.orElseGet(r::getDescription)
+                                );
+                                CustomDI.getLogger().log(
+                                        "update role", system.getCurrentUser(),
+                                        r.format(), "by role-update"
+                                );
+                            },
+                            () -> ConsoleUtils.printError("Роль не найдена")
                     );
                 }
         ));
@@ -264,25 +295,23 @@ public class CommandRegistry {
                     var name = args.baseArgs().getFirst();
                     var role = system.getRoleManager().findByName(name).orElse(null);
                     if (role == null) {
-                        System.out.println("Роль не найдена");
+                        ConsoleUtils.printError("Роль не найдена");
                         return;
                     }
 
                     var assignments = system.getAssignmentManager().findByRole(role);
                     if (!assignments.isEmpty()) {
-                        System.out.println("Внимание! Роль назначена следующим пользователям:");
+                        ConsoleUtils.printInfo("Внимание! Роль назначена следующим пользователям:");
                         for (var a : assignments) {
                             System.out.println("  - " + a.user().format());
                         }
                     }
 
-                    System.out.printf("""
-                            Точно хотите удалить роль:
-                                %s
-                            [Y/N]:
-                            """, role.getName());
-
-                    if (scanner.next().equalsIgnoreCase("y")) {
+                    if (ConsoleUtils.promptYesNo(scanner, "Точно хотите удалить роль?")) {
+                        CustomDI.getLogger().log(
+                                "delete role", system.getCurrentUser(),
+                                role.format(), "by role-delete"
+                        );
                         for (var a : assignments) {
                             system.getAssignmentManager().remove(a);
                         }
@@ -307,9 +336,13 @@ public class CommandRegistry {
                     try {
                         var permission = new Permission(permName, resource, description);
                         system.getRoleManager().addPermissionToRole(roleName, permission);
-                        System.out.println("Право добавлено: " + permission.format());
+                        ConsoleUtils.printSuccess("Право добавлено: " + permission.format());
+                        CustomDI.getLogger().log(
+                                "add permission", system.getCurrentUser(),
+                                roleName + ": " + permission.format(), "by role-add-permission"
+                        );
                     } catch (Exception e) {
-                        System.out.println("Ошибка: " + e.getMessage());
+                        ConsoleUtils.printError("Ошибка: " + e.getMessage());
                     }
                 }
         ));
@@ -325,34 +358,34 @@ public class CommandRegistry {
                     var roleName = args.baseArgs().getFirst();
                     var role = system.getRoleManager().findByName(roleName).orElse(null);
                     if (role == null) {
-                        System.out.println("Роль не найдена");
+                        ConsoleUtils.printError("Роль не найдена");
                         return;
                     }
 
                     var permissions = role.getPermissions().stream().toList();
                     if (permissions.isEmpty()) {
-                        System.out.println("У роли нет прав");
+                        ConsoleUtils.printError("У роли нет прав");
                         return;
                     }
 
                     System.out.println("Права роли " + role.getName() + ":");
+                    var headers = new String[]{"#", "PERMISSION", "RESOURCE", "DESCRIPTION"};
+                    var rows = new java.util.ArrayList<String[]>();
                     for (int i = 0; i < permissions.size(); i++) {
-                        System.out.printf("  %d. %s%n", i + 1, permissions.get(i).format());
+                        var p = permissions.get(i);
+                        rows.add(new String[]{String.valueOf(i + 1), p.name(), p.resource(), p.description()});
                     }
-                    System.out.println("Введите номер права для удаления:");
+                    System.out.println(FormatUtils.formatTable("Права роли " + role.getName(), headers, rows));
 
-                    try {
-                        int index = Integer.parseInt(scanner.next()) - 1;
-                        if (index < 0 || index >= permissions.size()) {
-                            System.out.println("Неверный номер");
-                            return;
-                        }
-                        var permission = permissions.get(index);
-                        system.getRoleManager().removePermissionFromRole(roleName, permission);
-                        System.out.println("Право удалено: " + permission.format());
-                    } catch (NumberFormatException e) {
-                        System.out.println("Введите корректный номер");
-                    }
+                    var permission = ConsoleUtils.promptChoice(scanner, "Введите номер права для удаления:", permissions);
+
+                    system.getRoleManager().removePermissionFromRole(roleName, permission);
+                    ConsoleUtils.printSuccess("Право удалено: " + permission.format());
+                    CustomDI.getLogger().log(
+                            "remove permission", system.getCurrentUser(),
+                            roleName + ": " + permission.format(), "by role-remove-permission"
+                    );
+
                 }
         ));
     }
@@ -374,13 +407,13 @@ public class CommandRegistry {
 
                     var user = system.getUserManager().findByUsername(username).orElse(null);
                     if (user == null) {
-                        System.out.println("Пользователь не найден");
+                        ConsoleUtils.printError("Пользователь не найден");
                         return;
                     }
 
                     var role = system.getRoleManager().findByName(roleName).orElse(null);
                     if (role == null) {
-                        System.out.println("Роль не найдена");
+                        ConsoleUtils.printError("Роль не найдена");
                         return;
                     }
 
@@ -392,10 +425,14 @@ public class CommandRegistry {
                                 ? new TemporaryAssignment(user, role, metadata, expiresAt.get(), false)
                                 : new PermanentAssignment(user, role, metadata);
                         system.getAssignmentManager().add(assignment);
-                        System.out.printf("Роль «%s» назначена пользователю %s (%s)%n",
-                                roleName, username, assignment.assignmentType());
+                        ConsoleUtils.printSuccess("Роль «%s» назначена пользователю %s (%s)%n".formatted(
+                                roleName, username, assignment.assignmentType()));
+                        CustomDI.getLogger().log(
+                                "assign role", system.getCurrentUser(),
+                                username + " -> " + roleName, "by assign-role"
+                        );
                     } catch (Exception e) {
-                        System.out.println("Ошибка: " + e.getMessage());
+                        ConsoleUtils.printError("Ошибка: " + e.getMessage());
                     }
                 }
         ));
@@ -413,13 +450,13 @@ public class CommandRegistry {
 
                     var user = system.getUserManager().findByUsername(username).orElse(null);
                     if (user == null) {
-                        System.out.println("Пользователь не найден");
+                        ConsoleUtils.printError("Пользователь не найден");
                         return;
                     }
 
                     var role = system.getRoleManager().findByName(roleName).orElse(null);
                     if (role == null) {
-                        System.out.println("Роль не найдена");
+                        ConsoleUtils.printError("Роль не найдена");
                         return;
                     }
 
@@ -429,7 +466,7 @@ public class CommandRegistry {
                             .orElse(null);
 
                     if (assignment == null) {
-                        System.out.println("Активное назначение не найдено");
+                        ConsoleUtils.printError("Активное назначение не найдено");
                         return;
                     }
 
@@ -438,7 +475,11 @@ public class CommandRegistry {
                     } else {
                         system.getAssignmentManager().remove(assignment);
                     }
-                    System.out.println("Роль «" + roleName + "» отозвана у пользователя " + username);
+                    CustomDI.getLogger().log(
+                            "revoke role", system.getCurrentUser(),
+                            username + " -> " + roleName, "by revoke-role"
+                    );
+                    ConsoleUtils.printSuccess("Роль «" + roleName + "» отозвана у пользователя " + username);
                 }
         ));
 
@@ -486,26 +527,27 @@ public class CommandRegistry {
                             .filter(a -> args.getFlagValue("--expires-before")
                                     .map(v -> a instanceof TemporaryAssignment temp
                                             && LocalDateTime.parse(temp.getExpiresAt())
-                                                    .isBefore(LocalDateTime.parse(v)))
+                                            .isBefore(LocalDateTime.parse(v)))
                                     .orElse(true))
+                            .sorted(AssignmentSorters.byUsername())
                             .toList();
 
                     if (assignments.isEmpty()) {
-                        System.out.println("Назначения не найдены");
+                        ConsoleUtils.printError("Назначения не найдены");
                         return;
                     }
 
-                    System.out.printf("%-20s | %-20s | %-9s | %-8s | %s%n",
-                            "USERNAME", "ROLE", "TYPE", "STATUS", "ASSIGNED AT");
-                    System.out.println("-".repeat(85));
-                    for (var a : assignments) {
-                        System.out.printf("%-20s | %-20s | %-9s | %-8s | %s%n",
-                                a.user().username(),
-                                a.role().getName(),
-                                a.assignmentType(),
-                                a.isActive() ? "ACTIVE" : "INACTIVE",
-                                a.metadata().assignedAt());
-                    }
+                    var headers = new String[]{"USERNAME", "ROLE", "TYPE", "STATUS", "ASSIGNED AT"};
+                    var rows = assignments.stream()
+                            .map(a -> new String[]{
+                                    a.user().username(),
+                                    a.role().getName(),
+                                    a.assignmentType(),
+                                    a.isActive() ? "ACTIVE" : "INACTIVE",
+                                    a.metadata().assignedAt()
+                            })
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Список назначений", headers, rows));
                 }
         ));
 
@@ -524,13 +566,13 @@ public class CommandRegistry {
 
                     var user = system.getUserManager().findByUsername(username).orElse(null);
                     if (user == null) {
-                        System.out.println("Пользователь не найден");
+                        ConsoleUtils.printError("Пользователь не найден");
                         return;
                     }
 
                     var role = system.getRoleManager().findByName(roleName).orElse(null);
                     if (role == null) {
-                        System.out.println("Роль не найдена");
+                        ConsoleUtils.printError("Роль не найдена");
                         return;
                     }
 
@@ -541,15 +583,19 @@ public class CommandRegistry {
                             .orElse(null);
 
                     if (assignment == null) {
-                        System.out.println("Временное назначение не найдено");
+                        ConsoleUtils.printError("Временное назначение не найдено");
                         return;
                     }
 
                     try {
                         system.getAssignmentManager().extendTemporaryAssignment(assignment.assignmentId(), newDate);
-                        System.out.println("Назначение продлено до: " + newDate);
+                        ConsoleUtils.printSuccess("Назначение продлено до: " + newDate);
+                        CustomDI.getLogger().log(
+                                "extend assignment", system.getCurrentUser(),
+                                username + " -> " + roleName, "by assignment-extend"
+                        );
                     } catch (Exception e) {
-                        System.out.println("Ошибка: " + e.getMessage());
+                        ConsoleUtils.printError("Ошибка: " + e.getMessage());
                     }
                 }
         ));
@@ -568,13 +614,13 @@ public class CommandRegistry {
                     var username = args.baseArgs().getFirst();
                     var user = system.getUserManager().findByUsername(username).orElse(null);
                     if (user == null) {
-                        System.out.println("Пользователь не найден");
+                        ConsoleUtils.printError("Пользователь не найден");
                         return;
                     }
 
                     var permissions = system.getAssignmentManager().getUserPermissions(user);
                     if (permissions.isEmpty()) {
-                        System.out.println("У пользователя нет прав");
+                        ConsoleUtils.printError("У пользователя нет прав");
                         return;
                     }
 
@@ -583,13 +629,12 @@ public class CommandRegistry {
                         grouped.computeIfAbsent(p.resource(), _ -> new java.util.ArrayList<>()).add(p);
                     }
 
-                    System.out.println("Права пользователя " + username + ":");
-                    for (var entry : grouped.entrySet()) {
-                        System.out.println("  [" + entry.getKey() + "]");
-                        for (var p : entry.getValue()) {
-                            System.out.println("    - " + p.name() + ": " + p.description());
-                        }
-                    }
+                    var headers = new String[]{"RESOURCE", "PERMISSION", "DESCRIPTION"};
+                    var rows = grouped.entrySet().stream()
+                            .flatMap(e -> e.getValue().stream()
+                                    .map(p -> new String[]{e.getKey(), p.name(), p.description()}))
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Права пользователя " + username, headers, rows));
                 }
         ));
 
@@ -607,7 +652,7 @@ public class CommandRegistry {
 
                     var user = system.getUserManager().findByUsername(username).orElse(null);
                     if (user == null) {
-                        System.out.println("Пользователь не найден");
+                        ConsoleUtils.printError("Пользователь не найден");
                         return;
                     }
 
@@ -618,15 +663,16 @@ public class CommandRegistry {
                                 .findFirst()
                                 .map(a -> a.role().getName())
                                 .orElse("неизвестно");
-                        System.out.printf("✓ Пользователь %s ИМЕЕТ право %s on %s (из роли: %s)%n",
-                                username, permName.toUpperCase(), resource.toLowerCase(), sourceRole);
+                        ConsoleUtils.printError("✓ Пользователь %s ИМЕЕТ право %s on %s (из роли: %s)%n".formatted(
+                                username, permName.toUpperCase(), resource.toLowerCase(), sourceRole));
                     } else {
-                        System.out.printf("✗ Пользователь %s НЕ ИМЕЕТ права %s on %s%n",
-                                username, permName.toUpperCase(), resource.toLowerCase());
+                        ConsoleUtils.printError("✗ Пользователь %s НЕ ИМЕЕТ права %s on %s%n".formatted(
+                                username, permName.toUpperCase(), resource.toLowerCase()));
                     }
                 }
         ));
     }
+
     public static void registerAdditionalCommands(CommandParser parser) {
         parser.registerCommand(new Command(
                 "help",
@@ -667,6 +713,103 @@ public class CommandRegistry {
                     System.out.flush();
                 }
         ));
-        // todo: exit
+        parser.registerCommand(new Command(
+                "audit-log",
+                """
+                        Просмотр логов
+                        usage: audit-log""",
+                new HashMap<>(),
+                0,
+                (_, system, _) -> {
+                    var logs = CustomDI.getLogger().getAll();
+                    for (var log : logs)
+                        System.out.println(log.toString());
+                }
+        ));
+        parser.registerCommand(new Command(
+                "report-users",
+                """
+                        отчёт по пользователям
+                        usage: report-users
+                        flags:
+                            -s <path> - сохранить в файл
+                        """,
+                Map.ofEntries(
+                        Map.entry("-s", 1)
+                ),
+                0,
+                (_, system, args) -> {
+                    var report = CustomDI.getReportGenerator().generateUserReport();
+                    var path = args.getFlagValue("-s");
+
+                    if (path.isEmpty()) {
+                        System.out.println(report);
+                        return;
+                    }
+
+                    try {
+                        CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    } catch (RuntimeException e) {
+                        ConsoleUtils.printError("Неверный путь к файлу: " + path.get());
+                    }
+                }
+        ));
+        parser.registerCommand(new Command(
+                "report-roles",
+                """
+                        отчёт по ролям
+                        usage: report-roles
+                        flags:
+                            -s <path> - сохранить в файл
+                        """,
+                Map.ofEntries(
+                        Map.entry("-s", 1)
+                ),
+                0,
+                (_, system, args) -> {
+                    var report = CustomDI.getReportGenerator().generateRoleReport();
+                    var path = args.getFlagValue("-s");
+
+                    if (path.isEmpty()) {
+                        System.out.println(report);
+                        return;
+                    }
+
+                    try {
+                        CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    } catch (RuntimeException e) {
+                        ConsoleUtils.printError("Неверный путь к файлу: " + path.get());
+                    }
+                }
+        ));
+        parser.registerCommand(new Command(
+                "report-matrix",
+                """
+                        матрица прав
+                        usage: report-matrix
+                        flags:
+                            -s <path> - сохранить в файл
+                        """,
+                Map.ofEntries(
+                        Map.entry("-s", 1)
+                ),
+                0,
+                (_, system, args) -> {
+                    var report = CustomDI.getReportGenerator().generatePermissionMatrix();
+                    var path = args.getFlagValue("-s");
+
+                    if (path.isEmpty()) {
+                        System.out.println(report);
+                        return;
+                    }
+
+                    try {
+                        CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    } catch (RuntimeException e) {
+                        ConsoleUtils.printError("Неверный путь к файлу: " + path.get());
+                    }
+                }
+        ));
+
     }
 }

@@ -1,5 +1,7 @@
 package org.example.data;
 
+import org.example.utils.ValidationUtils;
+
 import java.util.regex.Pattern;
 
 public record User(
@@ -8,22 +10,18 @@ public record User(
         String email
 ) {
 
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{3,20}$");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@]+@[^@]+\\.[^@]+$");
-
-
     public static User create(String username, String fullName, String email) {
-        if (username == null || fullName == null || email == null || username.isBlank() || fullName.isBlank() || email.isBlank()) {
-            throw new IllegalArgumentException("Все поля должны содержать значения");
-        }
+        ValidationUtils.requireNonEmpty(username, "username");
+        ValidationUtils.requireNonEmpty(fullName, "fullName");
+        ValidationUtils.requireNonEmpty(email, "email");
 
-        if (!USERNAME_PATTERN.matcher(username).matches()) {
+        email = ValidationUtils.normalizeString(email);
+
+        if (!ValidationUtils.isValidUsername(username))
             throw new IllegalArgumentException("username должен содержать только латинские буквы, цифры и подчёркивание (3–20 символов)");
-        }
-
-        if (!EMAIL_PATTERN.matcher(email).matches()) {
+        if (!ValidationUtils.isValidEmail(email))
             throw new IllegalArgumentException("email должен соответствовать формату");
-        }
+
         return new User(username, fullName, email);
     }
 
