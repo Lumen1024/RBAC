@@ -2,14 +2,10 @@ package org.example.assignment;
 
 import org.example.data.Role;
 import org.example.data.User;
+import org.example.utils.DateUtils;
 import org.example.utils.ValidationUtils;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-
 public class TemporaryAssignment extends AbstractRoleAssignment {
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private String expiresAt;
     private final boolean autoRenew;
@@ -31,7 +27,7 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     }
 
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(LocalDateTime.parse(expiresAt, FORMATTER));
+        return DateUtils.isAfter(DateUtils.getCurrentDate(), expiresAt.substring(0, 10));
     }
 
     @Override
@@ -52,14 +48,8 @@ public class TemporaryAssignment extends AbstractRoleAssignment {
     }
 
     public String getTimeRemaining() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expires = LocalDateTime.parse(expiresAt, FORMATTER);
-        if (now.isAfter(expires)) {
-            return "Expired";
-        }
-        long days = ChronoUnit.DAYS.between(now, expires);
-        long hours = ChronoUnit.HOURS.between(now, expires) % 24;
-        return "%d days, %d hours remaining".formatted(days, hours);
+        if (isExpired()) return "Expired";
+        return DateUtils.formatRelativeTime(expiresAt.substring(0, 10));
     }
 
     public String getExpiresAt() {

@@ -20,6 +20,9 @@ public class CommandParser {
         var base_args = new ArrayList<String>();
 
         for (int i = 0; i < args.size(); i++) {
+            if (args.get(i).startsWith("-") && !flags_signature.containsKey(args.get(i)))
+                return Optional.empty();
+
             if (flags_signature.containsKey(args.get(i))) {
                 var flag_name = args.get(i);
                 var flag_values_count = flags_signature.get(flag_name);
@@ -67,6 +70,11 @@ public class CommandParser {
         ).orElse(null);
         if (args == null) {
             ConsoleUtils.printError("Неправильный вызов команды");
+            return;
+        }
+        if (args.baseArgs().size() < command.getBaseArgCount()) {
+            ConsoleUtils.printError("Недостаточно аргументов. Использование:");
+            System.out.println(command.getDescription());
             return;
         }
         try {

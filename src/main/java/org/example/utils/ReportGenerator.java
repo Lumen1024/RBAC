@@ -23,92 +23,64 @@ public class ReportGenerator {
         var userManager = system.getUserManager();
         var assignmentManager = system.getAssignmentManager();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== Отчёт по пользователям ===\n");
-
         List<User> users = userManager.findAll().stream()
                 .sorted(Comparator.comparing(User::username))
                 .toList();
 
-        if (users.isEmpty()) {
-            sb.append("Пользователи отсутствуют.\n");
-            return sb.toString();
-        }
+        if (users.isEmpty()) return "Пользователи отсутствуют.";
 
-        for (User user : users) {
-            sb.append("\nПользователь: ").append(user.format()).append("\n");
+        var headers = new String[]{"USERNAME", "FULLNAME", "EMAIL", "ROLES"};
+        var rows = users.stream()
+                .map(u -> {
+                    String roles = assignmentManager.findByUser(u).stream()
+                            .filter(RoleAssignment::isActive)
+                            .map(a -> a.role().getName() + " [" + a.assignmentType() + "]")
+                            .collect(Collectors.joining(", "));
+                    return new String[]{u.username(), u.fullName(), u.email(), roles.isEmpty() ? "-" : roles};
+                })
+                .toList();
 
-            List<RoleAssignment> active = assignmentManager.findByUser(user).stream()
-                    .filter(RoleAssignment::isActive)
-                    .toList();
-
-            if (active.isEmpty()) {
-                sb.append("  Роли: нет активных назначений\n");
-            } else {
-                sb.append("  Роли (").append(active.size()).append("):\n");
-                for (RoleAssignment a : active) {
-                    sb.append("    - ").append(a.role().getName())
-                            .append(" [").append(a.assignmentType()).append("]\n");
-                }
-            }
-        }
-
-        sb.append("\nВсего пользователей: ").append(users.size()).append("\n");
-        return sb.toString();
+        return FormatUtils.formatTable("Отчёт по пользователям", headers, rows);
     }
 
     public String generateRoleReport() {
         var roleManager = system.getRoleManager();
         var assignmentManager = system.getAssignmentManager();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== Отчёт по ролям ===\n");
-
         List<Role> roles = roleManager.findAll().stream()
                 .sorted(Comparator.comparing(Role::getName))
                 .toList();
 
-        if (roles.isEmpty()) {
-            sb.append("Роли отсутствуют.\n");
-            return sb.toString();
-        }
+        if (roles.isEmpty()) return "Роли отсутствуют.";
 
-        for (Role role : roles) {
-            long userCount = assignmentManager.findByRole(role).stream()
-                    .filter(RoleAssignment::isActive)
-                    .map(a -> a.user().username())
-                    .distinct()
-                    .count();
+        var headers = new String[]{"NAME", "DESCRIPTION", "USERS", "PERMISSIONS"};
+        var rows = roles.stream()
+                .map(r -> {
+                    long userCount = assignmentManager.findByRole(r).stream()
+                            .filter(RoleAssignment::isActive)
+                            .map(a -> a.user().username())
+                            .distinct()
+                            .count();
+                    String perms = r.getPermissions().stream()
+                            .sorted(Comparator.comparing(Permission::name).thenComparing(Permission::resource))
+                            .map(Permission::format)
+                            .collect(Collectors.joining(", "));
+                    return new String[]{r.getName(), r.getDescription(), String.valueOf(userCount), perms.isEmpty() ? "-" : perms};
+                })
+                .toList();
 
-            sb.append("\nРоль: ").append(role.getName()).append("\n");
-            sb.append("  Описание: ").append(role.getDescription()).append("\n");
-            sb.append("  Пользователей: ").append(userCount).append("\n");
-            sb.append("  Разрешений: ").append(role.getPermissions().size()).append("\n");
-
-            role.getPermissions().stream()
-                    .sorted(Comparator.comparing(Permission::name).thenComparing(Permission::resource))
-                    .forEach(p -> sb.append("    - ").append(p.format()).append("\n"));
-        }
-
-        sb.append("\nВсего ролей: ").append(roles.size()).append("\n");
-        return sb.toString();
+        return FormatUtils.formatTable("Отчёт по ролям", headers, rows);
     }
 
     public String generatePermissionMatrix() {
         var userManager = system.getUserManager();
         var assignmentManager = system.getAssignmentManager();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== Матрица прав (пользователи × ресурсы) ===\n");
-
         List<User> users = userManager.findAll().stream()
                 .sorted(Comparator.comparing(User::username))
                 .toList();
 
-        if (users.isEmpty()) {
-            sb.append("Пользователи отсутствуют.\n");
-            return sb.toString();
-        }
+        if (users.isEmpty()) return "Пользователи отсутствуют.";
 
         List<String> resources = users.stream()
                 .flatMap(u -> assignmentManager.getUserPermissions(u).stream())
@@ -117,43 +89,31 @@ public class ReportGenerator {
                 .sorted()
                 .toList();
 
-        if (resources.isEmpty()) {
-            sb.append("Разрешения не назначены.\n");
-            return sb.toString();
-        }
+        if (resources.isEmpty()) return "Разрешения не назначены.";
 
-        int userColWidth = Math.max(
-                users.stream().mapToInt(u -> u.username().length()).max().orElse(8),
-                12
-        );
-        int resColWidth = Math.max(
-                resources.stream().mapToInt(String::length).max().orElse(8),
-                10
-        );
+        String[] headers = new String[resources.size() + 1];
+        headers[0] = "USERNAME";
+        for (int i = 0; i < resources.size(); i++)
+            headers[i + 1] = resources.get(i).toUpperCase();
 
-        sb.append(String.format("%-" + userColWidth + "s", "Пользователь"));
-        for (String resource : resources) {
-            sb.append(" | ").append(String.format("%-" + resColWidth + "s", resource));
-        }
-        sb.append("\n");
-        sb.append("-".repeat(userColWidth + (resColWidth + 3) * resources.size())).append("\n");
-
+        List<String[]> rows = new ArrayList<>();
         for (User user : users) {
             Set<Permission> perms = assignmentManager.getUserPermissions(user);
-            sb.append(String.format("%-" + userColWidth + "s", user.username()));
-
-            for (String resource : resources) {
+            String[] row = new String[resources.size() + 1];
+            row[0] = user.username();
+            for (int i = 0; i < resources.size(); i++) {
+                String resource = resources.get(i);
                 String actions = perms.stream()
                         .filter(p -> p.resource().equals(resource))
                         .map(Permission::name)
                         .sorted()
                         .collect(Collectors.joining(","));
-                sb.append(" | ").append(String.format("%-" + resColWidth + "s", actions.isEmpty() ? "-" : actions));
+                row[i + 1] = actions.isEmpty() ? "-" : actions;
             }
-            sb.append("\n");
+            rows.add(row);
         }
 
-        return sb.toString();
+        return FormatUtils.formatTable("Матрица прав", headers, rows);
     }
 
     public void exportToFile(String report, String filename) {

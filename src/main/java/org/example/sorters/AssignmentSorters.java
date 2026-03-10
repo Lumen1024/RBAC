@@ -6,15 +6,15 @@ import java.util.Comparator;
 
 public class AssignmentSorters {
 
-    Comparator<RoleAssignment> byUsername() {
+    public static Comparator<RoleAssignment> byUsername() {
         return Comparator.comparing(ra -> ra.user().username());
     }
 
-    Comparator<RoleAssignment> byRoleName() {
+    public static Comparator<RoleAssignment> byRoleName() {
         return Comparator.comparing(ra -> ra.role().getName());
     }
 
-    Comparator<RoleAssignment> byAssignmentDate() {
+    public static Comparator<RoleAssignment> byAssignmentDate() {
         return Comparator.comparing(ra -> ra.metadata().assignedAt());
     }
 }

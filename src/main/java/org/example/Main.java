@@ -17,6 +17,11 @@ void main() {
     CommandRegistry.registerAdditionalCommands(parser);
 
     var scanner = new Scanner(System.in);
+
+    var username = ConsoleUtils.promptString(scanner, "Введите имя пользователя:", true);
+    CustomDI.getRbacSystem().setCurrentUser(username);
+    ConsoleUtils.printSuccess("Добро пожаловать, " + username + "!");
+
     while (true) {
         var input = ConsoleUtils.promptString(scanner, ">>", true);
         if (input.toLowerCase().contains("exit")) {

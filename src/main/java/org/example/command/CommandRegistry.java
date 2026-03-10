@@ -9,6 +9,9 @@ import org.example.data.Permission;
 import org.example.data.Role;
 import org.example.data.User;
 import org.example.filter.UserFilters;
+import org.example.sorters.AssignmentSorters;
+import org.example.sorters.RoleSorters;
+import org.example.sorters.UserSorters;
 import org.example.utils.ConsoleUtils;
 import org.example.utils.FormatUtils;
 
@@ -50,6 +53,7 @@ public class CommandRegistry {
                             .filter(u -> args.getFlagValue("--fullname")
                                     .map(v -> UserFilters.byFullNameContains(v).test(u))
                                     .orElse(true))
+                            .sorted(UserSorters.byUsername())
                             .toList();
 
                     var headers = new String[]{"USERNAME", "FULLNAME", "EMAIL"};
@@ -189,6 +193,7 @@ public class CommandRegistry {
                             .filter(r -> args.getFlagValue("--min-permissions")
                                     .map(v -> r.getPermissions().size() >= Integer.parseInt(v))
                                     .orElse(true))
+                            .sorted(RoleSorters.byName())
                             .toList();
 
                     var headers = new String[]{"NAME", "DESCRIPTION", "PERMISSIONS"};
@@ -524,6 +529,7 @@ public class CommandRegistry {
                                             && LocalDateTime.parse(temp.getExpiresAt())
                                             .isBefore(LocalDateTime.parse(v)))
                                     .orElse(true))
+                            .sorted(AssignmentSorters.byUsername())
                             .toList();
 
                     if (assignments.isEmpty()) {
@@ -741,7 +747,11 @@ public class CommandRegistry {
                         return;
                     }
 
-                    CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    try {
+                        CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    } catch (RuntimeException e) {
+                        ConsoleUtils.printError("Неверный путь к файлу: " + path.get());
+                    }
                 }
         ));
         parser.registerCommand(new Command(
@@ -765,7 +775,11 @@ public class CommandRegistry {
                         return;
                     }
 
-                    CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    try {
+                        CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    } catch (RuntimeException e) {
+                        ConsoleUtils.printError("Неверный путь к файлу: " + path.get());
+                    }
                 }
         ));
         parser.registerCommand(new Command(
@@ -789,7 +803,11 @@ public class CommandRegistry {
                         return;
                     }
 
-                    CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    try {
+                        CustomDI.getReportGenerator().exportToFile(report, path.get());
+                    } catch (RuntimeException e) {
+                        ConsoleUtils.printError("Неверный путь к файлу: " + path.get());
+                    }
                 }
         ));
 

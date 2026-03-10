@@ -7,7 +7,12 @@ public class FormatUtils {
     private static final int MAX_COL_WIDTH = 40;
 
     public static String formatTable(String title, String[] headers, List<String[]> rows) {
-        return formatHeader(title) + "\n" + formatTable(headers, rows);
+        String table = formatTable(headers, rows);
+        int tableWidth = table.indexOf('\n'); // длина сепаратора = ширина таблицы
+        int innerWidth = tableWidth - 2;
+        String paddedTitle = padRight(padLeft(title, (innerWidth + title.length()) / 2), innerWidth);
+        String line = "=".repeat(tableWidth);
+        return line + "\n=" + paddedTitle + "=\n" + line + "\n" + table;
     }
 
     public static String formatTable(String[] headers, List<String[]> rows) {

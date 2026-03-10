@@ -2,15 +2,11 @@ package org.example.utils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AuditLog {
 
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final List<AuditEntry> entries = new ArrayList<>();
 
     public void log(String action, String performer, String target, String details) {
@@ -18,8 +14,7 @@ public class AuditLog {
         ValidationUtils.requireNonEmpty(performer, "performer");
         ValidationUtils.requireNonEmpty(target, "target");
 
-        String timestamp = LocalDateTime.now().format(FORMATTER);
-        entries.add(new AuditEntry(timestamp, action, performer, target, details));
+        entries.add(new AuditEntry(DateUtils.getCurrentDateTime(), action, performer, target, details));
     }
 
     public List<AuditEntry> getAll() {
@@ -45,21 +40,27 @@ public class AuditLog {
             System.out.println("Логи пусты");
             return;
         }
-        for (AuditEntry e : entries) {
-            System.out.printf("[%s] %s | performer: %s | target: %s | details: %s%n",
-                    e.timestamp(), e.action(), e.performer(), e.target(),
-                    e.details() != null ? e.details() : "-");
-        }
+        var headers = new String[]{"TIMESTAMP", "ACTION", "PERFORMER", "TARGET", "DETAILS"};
+        var rows = entries.stream()
+                .map(e -> new String[]{
+                        e.timestamp(), e.action(), e.performer(), e.target(),
+                        e.details() != null ? e.details() : "-"
+                })
+                .toList();
+        System.out.println(FormatUtils.formatTable("Audit Log", headers, rows));
     }
 
     public void saveToFile(String filename) {
         ValidationUtils.requireNonEmpty(filename, "filename");
-        try (PrintWriter writer = new PrintWriter(filename)) {
-            for (AuditEntry e : entries) {
-                writer.printf("[%s] %s | performer: %s | target: %s | details: %s%n",
+        var headers = new String[]{"TIMESTAMP", "ACTION", "PERFORMER", "TARGET", "DETAILS"};
+        var rows = entries.stream()
+                .map(e -> new String[]{
                         e.timestamp(), e.action(), e.performer(), e.target(),
-                        e.details() != null ? e.details() : "-");
-            }
+                        e.details() != null ? e.details() : "-"
+                })
+                .toList();
+        try (PrintWriter writer = new PrintWriter(filename)) {
+            writer.println(FormatUtils.formatTable("Audit Log", headers, rows));
         } catch (IOException ex) {
             throw new RuntimeException("Ошибка записи в файл: " + filename, ex);
         }
