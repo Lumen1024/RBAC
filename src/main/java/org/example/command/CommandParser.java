@@ -69,7 +69,10 @@ public class CommandParser {
             ConsoleUtils.printError("Неправильный вызов команды");
             return;
         }
-        command.execute(scanner, rbacSystem, args);
+        try {
+            command.execute(scanner, rbacSystem, args);
+        } catch (java.util.NoSuchElementException ignored) {
+        }
     }
 
     void printHelp(String command_name) {

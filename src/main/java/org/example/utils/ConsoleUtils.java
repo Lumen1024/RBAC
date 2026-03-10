@@ -1,6 +1,7 @@
 package org.example.utils;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class ConsoleUtils {
@@ -70,10 +71,15 @@ public class ConsoleUtils {
             );
         }
 
-        int choice = promptInt(scanner, "Ваш выбор:", 1, options.size());
-        T selected = options.get(choice - 1);
-        System.out.println(GREEN + "Выбрано: " + selected + RESET);
-        return selected;
+        try {
+            int choice = promptInt(scanner, "Ваш выбор:", 1, options.size());
+            T selected = options.get(choice - 1);
+            System.out.println(GREEN + "Выбрано: " + selected + RESET);
+            return selected;
+        } catch (NoSuchElementException e) {
+            printError("Неверный номер");
+            throw e;
+        }
     }
 
     // region helpers

@@ -10,6 +10,7 @@ import org.example.data.Role;
 import org.example.data.User;
 import org.example.filter.UserFilters;
 import org.example.utils.ConsoleUtils;
+import org.example.utils.FormatUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -51,9 +52,11 @@ public class CommandRegistry {
                                     .orElse(true))
                             .toList();
 
-                    for (User user : users) {
-                        System.out.println(user.format());
-                    }
+                    var headers = new String[]{"USERNAME", "FULLNAME", "EMAIL"};
+                    var rows = users.stream()
+                            .map(u -> new String[]{u.username(), u.fullName(), u.email()})
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Список пользователей", headers, rows));
                 }
         ));
         parser.registerCommand(new Command(
@@ -188,9 +191,11 @@ public class CommandRegistry {
                                     .orElse(true))
                             .toList();
 
-                    for (var role : roles) {
-                        System.out.println(role.format());
-                    }
+                    var headers = new String[]{"NAME", "DESCRIPTION", "PERMISSIONS"};
+                    var rows = roles.stream()
+                            .map(r -> new String[]{r.getName(), r.getDescription(), String.valueOf(r.getPermissions().size())})
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Список ролей", headers, rows));
                 }
         ));
 
@@ -359,9 +364,13 @@ public class CommandRegistry {
                     }
 
                     System.out.println("Права роли " + role.getName() + ":");
+                    var headers = new String[]{"#", "PERMISSION", "RESOURCE", "DESCRIPTION"};
+                    var rows = new java.util.ArrayList<String[]>();
                     for (int i = 0; i < permissions.size(); i++) {
-                        System.out.printf("  %d. %s%n", i + 1, permissions.get(i).format());
+                        var p = permissions.get(i);
+                        rows.add(new String[]{String.valueOf(i + 1), p.name(), p.resource(), p.description()});
                     }
+                    System.out.println(FormatUtils.formatTable("Права роли " + role.getName(), headers, rows));
 
                     var permission = ConsoleUtils.promptChoice(scanner, "Введите номер права для удаления:", permissions);
 
@@ -522,17 +531,17 @@ public class CommandRegistry {
                         return;
                     }
 
-                    System.out.printf("%-20s | %-20s | %-9s | %-8s | %s%n",
-                            "USERNAME", "ROLE", "TYPE", "STATUS", "ASSIGNED AT");
-                    System.out.println("-".repeat(85));
-                    for (var a : assignments) {
-                        System.out.printf("%-20s | %-20s | %-9s | %-8s | %s%n",
-                                a.user().username(),
-                                a.role().getName(),
-                                a.assignmentType(),
-                                a.isActive() ? "ACTIVE" : "INACTIVE",
-                                a.metadata().assignedAt());
-                    }
+                    var headers = new String[]{"USERNAME", "ROLE", "TYPE", "STATUS", "ASSIGNED AT"};
+                    var rows = assignments.stream()
+                            .map(a -> new String[]{
+                                    a.user().username(),
+                                    a.role().getName(),
+                                    a.assignmentType(),
+                                    a.isActive() ? "ACTIVE" : "INACTIVE",
+                                    a.metadata().assignedAt()
+                            })
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Список назначений", headers, rows));
                 }
         ));
 
@@ -614,13 +623,12 @@ public class CommandRegistry {
                         grouped.computeIfAbsent(p.resource(), _ -> new java.util.ArrayList<>()).add(p);
                     }
 
-                    System.out.println("Права пользователя " + username + ":");
-                    for (var entry : grouped.entrySet()) {
-                        System.out.println("  [" + entry.getKey() + "]");
-                        for (var p : entry.getValue()) {
-                            System.out.println("    - " + p.name() + ": " + p.description());
-                        }
-                    }
+                    var headers = new String[]{"RESOURCE", "PERMISSION", "DESCRIPTION"};
+                    var rows = grouped.entrySet().stream()
+                            .flatMap(e -> e.getValue().stream()
+                                    .map(p -> new String[]{e.getKey(), p.name(), p.description()}))
+                            .toList();
+                    System.out.println(FormatUtils.formatTable("Права пользователя " + username, headers, rows));
                 }
         ));
 
