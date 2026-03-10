@@ -81,13 +81,12 @@ class CommandParserTest {
     }
 
     @Test
-    void parseArgs_unknownFlagTreatedAsBaseArg() {
+    void parseArgs_unknownFlag_returnsEmpty() {
         var result = CommandParser.parseArgs(
                 List.of("--unknown", "value"),
                 Map.of("--username", 1)
         );
-        assertTrue(result.isPresent());
-        assertEquals(List.of("--unknown", "value"), result.get().baseArgs());
+        assertTrue(result.isEmpty());
     }
 
     @Test
