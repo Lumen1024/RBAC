@@ -4,14 +4,15 @@ import org.example.data.User;
 import org.example.filter.UserFilter;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class UserManager implements Repository<User> {
 
-    private final Map<String, User> users = new HashMap<>();
+    private final Map<String, User> users = new ConcurrentHashMap<>();
 
     @Override
-    public void add(User item) {
+    public synchronized void add(User item) {
         Objects.requireNonNull(item, "Пользователь не может быть null");
         if (users.containsKey(item.username())) {
             throw new IllegalStateException(
@@ -80,7 +81,7 @@ public class UserManager implements Repository<User> {
         return users.containsKey(username);
     }
 
-    public void update(String username, String newFullName, String newEmail) {
+    public synchronized void update(String username, String newFullName, String newEmail) {
         if (!users.containsKey(username)) {
             throw new NoSuchElementException(
                     "Пользователь с username '%s' не найден".formatted(username));

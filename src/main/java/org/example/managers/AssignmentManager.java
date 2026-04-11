@@ -8,11 +8,12 @@ import org.example.data.User;
 import org.example.filter.AssignmentFilter;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class AssignmentManager implements Repository<RoleAssignment> {
 
-    private final Map<String, RoleAssignment> assignments = new HashMap<>();
+    private final Map<String, RoleAssignment> assignments = new ConcurrentHashMap<>();
     private final UserManager userManager;
     private final RoleManager roleManager;
 
@@ -24,7 +25,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
     }
 
     @Override
-    public void add(RoleAssignment item) {
+    public synchronized void add(RoleAssignment item) {
         Objects.requireNonNull(item, "Назначение не может быть null");
 
         if (userManager.findById(item.user().username()).isEmpty()) {
@@ -144,7 +145,7 @@ public class AssignmentManager implements Repository<RoleAssignment> {
                 .collect(Collectors.toSet());
     }
 
-    public void revokeAssignment(String assignmentId) {
+    public synchronized void revokeAssignment(String assignmentId) {
         Objects.requireNonNull(assignmentId, "assignmentId не может быть null");
         if (!assignments.containsKey(assignmentId))
             throw new NoSuchElementException("Назначение с ID '%s' не найдено".formatted(assignmentId));
