@@ -5,22 +5,23 @@ import org.example.data.Role;
 import org.example.filter.RoleFilter;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class RoleManager implements Repository<Role> {
 
-    private final Map<String, Role> byId = new HashMap<>();
-    private final Map<String, Role> byName = new HashMap<>();
+    private final Map<String, Role> byId = new ConcurrentHashMap<>();
+    private final Map<String, Role> byName = new ConcurrentHashMap<>();
 
-    private Predicate<Role> assignmentCheck = null;
+    private volatile Predicate<Role> assignmentCheck = null;
 
     public void setAssignmentCheck(Predicate<Role> check) {
         this.assignmentCheck = check;
     }
 
     @Override
-    public void add(Role item) {
+    public synchronized void add(Role item) {
         Objects.requireNonNull(item, "Роль не может быть null");
 
         if (byName.containsKey(item.getName())) {
@@ -32,7 +33,7 @@ public class RoleManager implements Repository<Role> {
     }
 
     @Override
-    public boolean remove(Role item) {
+    public synchronized boolean remove(Role item) {
         if (item == null) return false;
         if (!byId.containsKey(item.getId())) return false;
 
@@ -91,7 +92,7 @@ public class RoleManager implements Repository<Role> {
         return byName.containsKey(name);
     }
 
-    public void update(String roleName, String newName, String newDescription) {
+    public synchronized void update(String roleName, String newName, String newDescription) {
         Role role = getExistingByName(roleName);
         if (!roleName.equals(newName) && byName.containsKey(newName)) {
             throw new IllegalStateException("Роль с именем '%s' уже существует".formatted(newName));
