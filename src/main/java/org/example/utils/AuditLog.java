@@ -2,19 +2,34 @@ package org.example.utils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class AuditLog {
 
-    private final List<AuditEntry> entries = new ArrayList<>();
+    private final BlockingQueue<AuditEntry> queue = new LinkedBlockingQueue<>();
+    private final List<AuditEntry> entries = new CopyOnWriteArrayList<>();
+
+    public AuditLog() {
+        Thread.ofVirtual().start(() -> {
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    entries.add(queue.take());
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+    }
 
     public void log(String action, String performer, String target, String details) {
         ValidationUtils.requireNonEmpty(action, "action");
         ValidationUtils.requireNonEmpty(performer, "performer");
         ValidationUtils.requireNonEmpty(target, "target");
 
-        entries.add(new AuditEntry(DateUtils.getCurrentDateTime(), action, performer, target, details));
+        queue.add(new AuditEntry(DateUtils.getCurrentDateTime(), action, performer, target, details));
     }
 
     public List<AuditEntry> getAll() {

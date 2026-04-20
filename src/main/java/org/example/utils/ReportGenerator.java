@@ -116,11 +116,84 @@ public class ReportGenerator {
         return FormatUtils.formatTable("Матрица прав", headers, rows);
     }
 
+    public String generateUserReportAsync() {
+        var userManager = system.getUserManager();
+        var assignmentManager = system.getAssignmentManager();
+
+        List<User> users = userManager.findAll().stream()
+                .sorted(Comparator.comparing(User::username))
+                .toList();
+
+        if (users.isEmpty()) return "Пользователи отсутствуют.";
+
+        var headers = new String[]{"USERNAME", "FULLNAME", "EMAIL", "ROLES"};
+        var rows = users.parallelStream()
+                .map(u -> {
+                    String roles = assignmentManager.findByUser(u).stream()
+                            .filter(RoleAssignment::isActive)
+                            .map(a -> a.role().getName() + " [" + a.assignmentType() + "]")
+                            .collect(Collectors.joining(", "));
+                    return new String[]{u.username(), u.fullName(), u.email(), roles.isEmpty() ? "-" : roles};
+                })
+                .toList();
+
+        return FormatUtils.formatTable("Отчёт по пользователям", headers, rows);
+    }
+
+    public String generatePermissionMatrixAsync() {
+        var userManager = system.getUserManager();
+        var assignmentManager = system.getAssignmentManager();
+
+        List<User> users = userManager.findAll().stream()
+                .sorted(Comparator.comparing(User::username))
+                .toList();
+
+        if (users.isEmpty()) return "Пользователи отсутствуют.";
+
+        List<String> resources = users.parallelStream()
+                .flatMap(u -> assignmentManager.getUserPermissions(u).stream())
+                .map(Permission::resource)
+                .distinct()
+                .sorted()
+                .toList();
+
+        if (resources.isEmpty()) return "Разрешения не назначены.";
+
+        String[] headers = new String[resources.size() + 1];
+        headers[0] = "USERNAME";
+        for (int i = 0; i < resources.size(); i++)
+            headers[i + 1] = resources.get(i).toUpperCase();
+
+        List<String[]> rows = users.parallelStream()
+                .map(user -> {
+                    Set<Permission> perms = assignmentManager.getUserPermissions(user);
+                    String[] row = new String[resources.size() + 1];
+                    row[0] = user.username();
+                    for (int i = 0; i < resources.size(); i++) {
+                        String resource = resources.get(i);
+                        String actions = perms.stream()
+                                .filter(p -> p.resource().equals(resource))
+                                .map(Permission::name)
+                                .sorted()
+                                .collect(Collectors.joining(","));
+                        row[i + 1] = actions.isEmpty() ? "-" : actions;
+                    }
+                    return row;
+                })
+                .toList();
+
+        return FormatUtils.formatTable("Матрица прав", headers, rows);
+    }
+
     public void exportToFile(String report, String filename) {
         try (PrintWriter writer = new PrintWriter(filename)) {
             writer.print(report);
         } catch (IOException e) {
             throw new RuntimeException("Не удалось сохранить отчёт в файл '%s': %s".formatted(filename, e.getMessage()), e);
         }
+    }
+
+    public Thread exportToFileAsync(String report, String filename) {
+        return Thread.ofVirtual().start(() -> exportToFile(report, filename));
     }
 }
