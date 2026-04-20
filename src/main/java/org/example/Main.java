@@ -8,6 +8,7 @@ import org.example.utils.ConsoleUtils;
 
 void main() {
     CustomDI.getRbacSystem().init();
+    CustomDI.getCleanupService().start(60);
     var parser = CustomDI.getCommandParser();
 
     CommandRegistry.registerUserCommands(parser);
@@ -25,6 +26,7 @@ void main() {
     while (true) {
         var input = ConsoleUtils.promptString(scanner, ">>", true);
         if (input.toLowerCase().contains("exit")) {
+            CustomDI.getCleanupService().stop();
             ConsoleUtils.printSuccess("Выход из программы");
             return;
         }
