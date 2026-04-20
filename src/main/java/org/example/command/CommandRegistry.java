@@ -732,16 +732,31 @@ public class CommandRegistry {
                         отчёт по пользователям
                         usage: report-users
                         flags:
-                            -s <path> - сохранить в файл
+                            -s <path>  - сохранить в файл
+                            -async     - генерировать в фоне (только с -s)
                         """,
                 Map.ofEntries(
-                        Map.entry("-s", 1)
+                        Map.entry("-s", 1),
+                        Map.entry("-async", 0)
                 ),
                 0,
                 (_, system, args) -> {
-                    var report = CustomDI.getReportGenerator().generateUserReport();
+                    boolean async = args.checkFlag("-async");
                     var path = args.getFlagValue("-s");
 
+                    if (async && path.isEmpty()) {
+                        ConsoleUtils.printError("Флаг -async можно использовать только вместе с -s");
+                        return;
+                    }
+
+                    if (async) {
+                        var report = CustomDI.getReportGenerator().generateUserReportAsync();
+                        CustomDI.getReportGenerator().exportToFileAsync(report, path.get());
+                        System.out.println("Сохранение отчёта запущено в фоне: " + path.get());
+                        return;
+                    }
+
+                    var report = CustomDI.getReportGenerator().generateUserReport();
                     if (path.isEmpty()) {
                         System.out.println(report);
                         return;
@@ -788,16 +803,31 @@ public class CommandRegistry {
                         матрица прав
                         usage: report-matrix
                         flags:
-                            -s <path> - сохранить в файл
+                            -s <path>  - сохранить в файл
+                            -async     - генерировать в фоне (только с -s)
                         """,
                 Map.ofEntries(
-                        Map.entry("-s", 1)
+                        Map.entry("-s", 1),
+                        Map.entry("-async", 0)
                 ),
                 0,
                 (_, system, args) -> {
-                    var report = CustomDI.getReportGenerator().generatePermissionMatrix();
+                    boolean async = args.checkFlag("-async");
                     var path = args.getFlagValue("-s");
 
+                    if (async && path.isEmpty()) {
+                        ConsoleUtils.printError("Флаг -async можно использовать только вместе с -s");
+                        return;
+                    }
+
+                    if (async) {
+                        var report = CustomDI.getReportGenerator().generatePermissionMatrixAsync();
+                        CustomDI.getReportGenerator().exportToFileAsync(report, path.get());
+                        System.out.println("Сохранение матрицы запущено в фоне: " + path.get());
+                        return;
+                    }
+
+                    var report = CustomDI.getReportGenerator().generatePermissionMatrix();
                     if (path.isEmpty()) {
                         System.out.println(report);
                         return;

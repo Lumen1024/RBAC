@@ -192,4 +192,8 @@ public class ReportGenerator {
             throw new RuntimeException("Не удалось сохранить отчёт в файл '%s': %s".formatted(filename, e.getMessage()), e);
         }
     }
+
+    public Thread exportToFileAsync(String report, String filename) {
+        return Thread.ofVirtual().start(() -> exportToFile(report, filename));
+    }
 }
