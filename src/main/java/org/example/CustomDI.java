@@ -17,6 +17,7 @@ public class CustomDI {
     private static CommandParser commandParser = null;
     private static AuditLog logger = null;
     private static ReportGenerator reportGenerator = null;
+    private static AssignmentCleanupService cleanupService = null;
 
 
     public static synchronized UserManager getUserManager() {
@@ -62,10 +63,17 @@ public class CustomDI {
     }
     public static synchronized ReportGenerator getReportGenerator() {
         if (reportGenerator == null)
-            reportGenerator =  new ReportGenerator(getRbacSystem());
+            reportGenerator = new ReportGenerator(getRbacSystem());
 
         return reportGenerator;
     }
 
+    public static synchronized AssignmentCleanupService getCleanupService() {
+        if (cleanupService == null)
+            cleanupService = new AssignmentCleanupService(
+                    getAssignmentManager(), getUserManager(), getRoleManager(), getLogger()
+            );
 
+        return cleanupService;
+    }
 }
